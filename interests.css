@@ -1,0 +1,61 @@
+/* Interests: three infinite carousels (Music, Games, Manhwas), active card centered */
+#interests .wrap{position:relative;z-index:1}
+#interests h2{text-align:center}
+.pgroup{margin-top:44px}
+.pgroup__title{display:flex;align-items:center;justify-content:center;gap:10px;font-size:20px;margin-bottom:6px}
+.pgroup__title i{color:var(--gold)}
+.pgroup__title small{margin-left:4px;padding:2px 10px;border:1px solid var(--bd);border-radius:20px;font-size:12px;color:var(--mut);font-weight:500}
+
+/* Fallback (no JS): plain centered grid */
+.pgrid{display:grid;gap:20px;justify-content:center;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+
+/* Carousel mode (class added by interests.js): every card sits in the same grid cell, positioned by --o */
+.pgrid.is-car{display:grid;grid-template-columns:100%;justify-items:center;align-items:center;gap:0;
+  container-type:inline-size;overflow:hidden;padding:34px 0;touch-action:pan-y;cursor:grab;outline-offset:4px;user-select:none;-webkit-user-select:none}
+.pgrid.is-car.drag{cursor:grabbing}
+.pgrid.is-car .pcard{
+  --cw:min(var(--max-cw,260px),33cqw);--step:calc(var(--cw)*.96);
+  grid-area:1/1;width:var(--cw);
+  transform:translateX(calc(var(--o)*var(--step))) scale(var(--s,1));
+  opacity:var(--op,1);filter:brightness(var(--br,1));z-index:var(--z,1);
+  transition:transform .7s cubic-bezier(.2,.8,.2,1),opacity .7s,filter .7s;will-change:transform}
+.pgroup--music .pgrid{--max-cw:270px}
+.pgroup--games .pgrid{--max-cw:360px}
+.pgroup--manhwa .pgrid{--max-cw:240px}
+
+.pcard[data-pos="0"]{--s:1.08;--op:1;--br:1;--z:3}
+.pcard[data-pos="1"],.pcard[data-pos="-1"]{--s:.8;--op:.5;--br:.55;--z:2;cursor:pointer}
+.pcard[data-pos="hide"]{--s:.6;--op:0;--br:.4;--z:1;pointer-events:none}
+
+/* narrow containers: one big card with the side cards peeking in */
+@container (max-width:560px){
+  .pgrid.is-car .pcard{--cw:min(var(--max-cw,260px),58cqw);--step:calc(var(--cw)*.78)}
+  .pcard[data-pos="1"] p,.pcard[data-pos="-1"] p,.pcard[data-pos="1"] .pc-meta,.pcard[data-pos="-1"] .pc-meta{display:none}
+}
+
+.pcard{--c1:#3b2a55;--c2:#c2577a;position:relative;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--bd);border-radius:18px;
+  background:linear-gradient(150deg,var(--c1),var(--c2));box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.pgroup--games .pcard{--c1:#12363a;--c2:#3f8f6b}
+.pgroup--manhwa .pcard{--c1:#2a2a5c;--c2:#5b8bd6}
+
+.pcard>img{display:block;width:100%;object-fit:cover;transition:transform .6s;-webkit-user-drag:none;pointer-events:none}
+.pcard[data-pos="0"]:hover>img{transform:scale(1.05)}
+.pcard--music>img{aspect-ratio:1}
+.pcard--games>img{aspect-ratio:16/10}
+.pcard--manhwa>img{aspect-ratio:2/3}
+/* if the image is missing the gradient + a block of empty art space remains */
+.pcard:not(:has(>img))::before{content:"";display:block;aspect-ratio:1;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.25),transparent 60%)}
+.pcard--games:not(:has(>img))::before{aspect-ratio:16/10}
+.pcard--manhwa:not(:has(>img))::before{aspect-ratio:2/3}
+
+.pcard section{position:relative;display:grid;gap:8px;padding:16px 18px 18px;margin-top:-1px;
+  background:linear-gradient(to bottom,rgba(10,10,12,.78),rgba(10,10,12,.94));backdrop-filter:blur(10px);flex:1;align-content:start}
+.pcard h3{font-size:18px;line-height:1.25;color:#f4f1ee}
+.pcard p{font-size:13.5px;line-height:1.55;color:#c4bdb8;margin:0}
+.pc-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.pc-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;color:#f4f1ee;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}
+.pc-tag i{color:var(--gold);font-size:11px}
+
+@media(max-width:620px){.pcard h3{font-size:15px}.pcard p{font-size:12.5px}}
+@media(prefers-reduced-motion:reduce){.pgrid.is-car .pcard,.pcard>img{transition:none}}

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luigi A. Lising — BSIT Student & Web Developer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css">
+<link href="https://fonts.cdnfonts.com/css/ghost-stories-deluxe" rel="stylesheet">
+<link href="https://fonts.cdnfonts.com/css/poppins" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="arcade.css">
+<link rel="stylesheet" href="interests.css">
+</head>
+<body class="loading">
+
+<div id="boot" role="status"><p>Loading portfolio</p><div class="bar"><i></i></div><b>LUIGI A. LISING</b></div>
+<div id="progress"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<details class="dock">
+  <summary><i class="fa-solid fa-sliders"></i> Controls</summary>
+  <div class="dock-panel">
+    <div class="themes" role="group" aria-label="Theme">
+      <button data-theme="dark" aria-pressed="true">Dark</button>
+      <button data-theme="green" aria-pressed="false">Green</button>
+      <button data-theme="light" aria-pressed="false">Light</button>
+    </div>
+    <div class="player">
+      <button id="prev" aria-label="Previous track"><i class="fa-solid fa-backward-step"></i></button>
+      <button id="play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
+      <button id="next" aria-label="Next track"><i class="fa-solid fa-forward-step"></i></button>
+      <span id="track">Select a track</span>
+    </div>
+    <audio id="audio" preload="none"></audio>
+  </div>
+</details>
+
+<section class="sec" id="home">
+  <div id="home-bg" aria-hidden="true"></div>
+  <div class="hero-text">
+    <h1>Luigi A. Lising</h1>
+    <p class="roles">BSIT student building websites, games and creative projects</p>
+    <p class="quote">“A little curiosity can turn into something you never imagined building.”</p>
+    <div class="social">
+      <a href="https://www.facebook.com/luigi.lising.2025" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i>Facebook</a>
+      <a href="https://mail.google.com/mail/?view=cm&fs=1&to=lisingluigi221@gmail.com" target="_blank" rel="noopener"><i class="fa-solid fa-envelope"></i>Gmail</a>
+      <a href="https://discord.com/users/1311652776580874260" target="_blank" rel="noopener"><i class="fa-brands fa-discord"></i>Discord</a>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="about">
+  <div class="wrap narrow">
+    <h2>Curiosity is usually where my projects begin.</h2>
+    <p>I'm Luigi, a BSIT student exploring web development, programming, game development, networking, and creative technology.</p>
+    <p>I like building things that interest me: a website, a game, an animation, or an idea I've never tried before. Most of the time I start without knowing exactly how to make it. I learn as I go, experiment, mess things up, and try again.</p>
+    <p>I'm still at the beginning of my journey, but that's what I enjoy about it. Every project gives me something new to learn, and every new thing I learn gives me something else I want to build.</p>
+    <p>This portfolio is a collection of what I'm learning and the things I'm interested in.</p>
+    <ul class="tags"><li>Web Development</li><li>Programming</li><li>Game Development</li><li>Creative Projects</li><li>IT &amp; Networking</li></ul>
+  </div>
+</section>
+
+<section class="sec" id="skills">
+  <div class="wrap">
+    <span class="eyebrow"><i class="fa-solid fa-gear"></i>Core architecture &amp; toolkit</span>
+    <h2>What I build with <i class="fa-solid fa-bolt"></i></h2>
+    <p class="skills-sub">A breakdown of languages, frameworks, creative software, and AI-assisted workflows I leverage daily to engineer interactive digital experiences.</p>
+    <div id="skill-grid"></div>
+    <div class="domains">
+      <span class="num" id="domain-count">07</span>
+      <div class="txt"><h3>Structured Domains of Expertise</h3><p>From front-of-the-screen pixel precision to algorithmic systems &amp; 3D environments.</p></div>
+      <a class="btn-gold" href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=lisingluigi221@gmail.com" target="_blank" rel="noopener">Discuss A Project <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="interests">
+  <div class="wrap">
+    <h2>Interests</h2>
+    <div class="pgroup pgroup--music">
+      <h3 class="pgroup__title"><i class="fa-solid fa-headphones"></i>Music<small>5</small></h3>
+      <div class="pgrid">
+        <article class="pcard pcard--music">
+          <img src="images/interests/m1.jpg" alt="Mr Loverman by Ricky Montgomery cover art" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Mr Loverman</h3>
+            <p>A song about heartbreak, longing, and loving someone you can&#x27;t quite have.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-user"></i> Ricky Montgomery</span><span class="pc-tag"><i class="fa-solid fa-music"></i> Heartbreak</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--music">
+          <img src="images/interests/m2.jpg" alt="Champagne Supernova by Oasis cover art" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Champagne Supernova</h3>
+            <p>An atmospheric rock song with dreamy imagery and a nostalgic feel.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-user"></i> Oasis</span><span class="pc-tag"><i class="fa-solid fa-music"></i> Britpop</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--music">
+          <img src="images/interests/m3.jpg" alt="Cinderella by Rodgers + Hammerstein cover art" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Cinderella</h3>
+            <p>A storybook track from the Broadway cast recording, theatrical and a little wistful.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-user"></i> Rodgers + Hammerstein</span><span class="pc-tag"><i class="fa-solid fa-music"></i> Musical</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--music">
+          <img src="images/interests/m4.jpg" alt="Evergreen by sajou no hana cover art" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Evergreen</h3>
+            <p>A soft, melodic track that sits in my regular rotation.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-user"></i> sajou no hana</span><span class="pc-tag"><i class="fa-solid fa-music"></i> J-Pop</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--music">
+          <img src="images/interests/m5.jpg" alt="Leave &#x27;Em Alone by Layton Greene cover art" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Leave &#x27;Em Alone</h3>
+            <p>A hard-hitting track featuring Lil Baby, City Girls and PnB Rock.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-user"></i> Layton Greene</span><span class="pc-tag"><i class="fa-solid fa-music"></i> Hip-Hop</span></div>
+          </section>
+        </article>
+      </div>
+    </div>
+    <div class="pgroup pgroup--games">
+      <h3 class="pgroup__title"><i class="fa-solid fa-gamepad"></i>Games<small>5</small></h3>
+      <div class="pgrid">
+        <article class="pcard pcard--games">
+          <img src="images/interests/g1.jpg" alt="Project Zomboid artwork" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Project Zomboid</h3>
+            <p>A brutal survival experience where every decision, resource and encounter can decide whether you live another day.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-gamepad"></i> Survival · Sandbox</span><span class="pc-tag"><i class="fa-solid fa-desktop"></i> PC · Steam</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--games">
+          <img src="images/interests/g2.jpg" alt="Valorant artwork" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Valorant</h3>
+            <p>A competitive shooter combining precise gunplay, strategy and agent abilities.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-gamepad"></i> Tactical FPS</span><span class="pc-tag"><i class="fa-solid fa-desktop"></i> PC · Riot Games</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--games">
+          <img src="images/interests/g3.jpg" alt="Minecraft artwork" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Minecraft</h3>
+            <p>A limitless sandbox for exploring, building, crafting and surviving in worlds shaped by imagination.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-gamepad"></i> Sandbox · Survival</span><span class="pc-tag"><i class="fa-solid fa-desktop"></i> Multi-platform</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--games">
+          <img src="images/interests/g4.jpg" alt="Stardew Valley artwork" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Stardew Valley</h3>
+            <p>A relaxing farming life with exploration, relationships, fishing and a little adventure.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-gamepad"></i> Farming · RPG</span><span class="pc-tag"><i class="fa-solid fa-desktop"></i> Multi-platform</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--games">
+          <img src="images/interests/g5.jpg" alt="Roblox artwork" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Roblox</h3>
+            <p>A platform full of user-created games, experiences and endless ways to play.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-gamepad"></i> Gaming Platform</span><span class="pc-tag"><i class="fa-solid fa-desktop"></i> Multi-platform</span></div>
+          </section>
+        </article>
+      </div>
+    </div>
+    <div class="pgroup pgroup--manhwa">
+      <h3 class="pgroup__title"><i class="fa-solid fa-book-open"></i>Manhwas<small>5</small></h3>
+      <div class="pgrid">
+        <article class="pcard pcard--manhwa">
+          <img src="images/interests/ma1.jpg" alt="Pick Me Up, Infinite Gacha cover" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Pick Me Up, Infinite Gacha</h3>
+            <p>A ruthless tower-climbing survival story where a top player becomes a low-level character inside a deadly game.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-book-open"></i> Fantasy · Survival</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--manhwa">
+          <img src="images/interests/ma2.jpg" alt="The Greatest Estate Developer cover" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>The Greatest Estate Developer</h3>
+            <p>A clever protagonist uses engineering, economics and absurd ingenuity to transform a struggling estate.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-book-open"></i> Comedy · Fantasy</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--manhwa">
+          <img src="images/interests/ma3.jpg" alt="Killer Peter cover" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Killer Peter</h3>
+            <p>A story centered on a deadly assassin, combat, survival and a dangerous world.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-book-open"></i> Action · Revenge</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--manhwa">
+          <img src="images/interests/ma4.jpg" alt="Lookism cover" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>Lookism</h3>
+            <p>A story about appearance, identity, social prejudice and the hidden realities of different lives.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-book-open"></i> Action · Drama</span></div>
+          </section>
+        </article>
+        <article class="pcard pcard--manhwa">
+          <img src="images/interests/ma5.jpg" alt="A Regressor&#x27;s Tale of Cultivation cover" loading="lazy" onerror="this.remove()">
+          <section>
+            <h3>A Regressor&#x27;s Tale of Cultivation</h3>
+            <p>A cultivation journey driven by regression, persistence, ambition and the pursuit of strength.</p>
+            <div class="pc-meta"><span class="pc-tag"><i class="fa-solid fa-book-open"></i> Fantasy · Martial Arts</span></div>
+          </section>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="arcade">
+  <canvas id="arcade-drift" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <h2>Arcade</h2>
+    <p class="sub">Three small games, each with its own look: Snake, Flip the Coin and Memory.</p>
+    <div class="launch">
+      <button class="enter" id="enter-arcade" type="button"><i class="fa-solid fa-gamepad"></i>Enter Arcade</button>
+      <small>Esc closes it. Your site music pauses while you play.</small>
+    </div>
+  </div>
+</section>
+
+<nav class="rail" aria-label="Sections">
+  <a href="#home" data-t="home">Home</a><a href="#about" data-t="about">About</a><a href="#skills" data-t="skills">Skills</a><a href="#interests" data-t="interests">Interests</a><a href="#arcade" data-t="arcade">Arcade</a>
+</nav>
+
+<script src="hero-bg.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="arcade-bg.js"></script>
+<script src="script.js"></script>
+<script src="interests.js"></script>
+<script src="arcade.js"></script>
+
+</body>
+</html>
