@@ -1,4 +1,4 @@
-/* Arcade: launch panel + fullscreen overlay. Games: Snake, Flip the Coin, Memory.
+/* Arcade: launch panel + fullscreen overlay. Games: Snake, Flip the Coin, Memory, Poly Rush.
    Keys, timers and sounds only exist while the overlay is open. */
 (() => {
   'use strict';
@@ -10,15 +10,23 @@
     set(k, v) { try { localStorage.setItem('pf:' + k, JSON.stringify(v)); } catch (e) {} }
   };
 
-  /* =====================================================================
-     DATA ACCESS: the ONLY place scores are read or written.
-     To add a database later, change just these two functions (keep them async).
-       getScores(game)                 -> [{ name, score }], best first
-       submitScore(game, name, score)  -> { ok: boolean }
-     game is 'snake' | 'coin' | 'memory'. Memory is "fewest moves", so lower is better.
-     ===================================================================== */
-  async function getScores(game) { return []; }
-  async function submitScore(game, name, score) { return { ok: false }; }
+  /* Shared scores are read and written through the same-origin API. */
+  async function getScores(game) {
+    const response = await fetch('/api/leaderboard?game=' + encodeURIComponent(game));
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not load leaderboard');
+    return result.scores;
+  }
+  async function submitScore(game, name, score) {
+    const response = await fetch('/api/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game, name, score })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not submit score');
+    return result;
+  }
 
   const CFG = {
     coin: { heads: 'resources/heads.svg', tails: 'resources/tails.svg' },
@@ -104,7 +112,7 @@
           '<section class="ao-card soft"><div class="ao-card-h"><span class="ao-label"><i class="fa-regular fa-circle-question"></i>&nbsp; How to play</span></div><div class="ao-guide" id="ao-guide"></div></section>' +
         '</main>' +
         '<aside class="ao-right ao-col">' +
-          '<section class="ao-card"><div class="ao-card-h"><h2><i class="fa-solid fa-layer-group"></i>Cabinets</h2><span class="ao-tag">3 installed</span></div><div class="ao-cabs" id="ao-cabs"></div></section>' +
+          '<section class="ao-card"><div class="ao-card-h"><h2><i class="fa-solid fa-layer-group"></i>Cabinets</h2><span class="ao-tag">4 installed</span></div><div class="ao-cabs" id="ao-cabs"></div></section>' +
           '<section class="ao-card soft"><div class="ao-sound-row"><span><i class="fa-solid fa-volume-high" id="ao-sicon"></i><span id="ao-stext">8-bit audio synth</span></span>' +
             '<button class="ao-switch" id="ao-sound" type="button" role="switch" aria-checked="true" aria-label="Game sounds"></button></div>' +
             '<p class="ao-note">Site music is paused while the arcade is open.</p></section>' +
@@ -130,7 +138,9 @@
       if (score > 0) {
         const b = getBest(g);
         if (b == null || (cur.low ? score < b : score > b)) store.set(bestKey(g), score);
-        submitScore(g, handle(), score).then(renderBoard, () => {});
+        submitScore(g, handle(), score).then(renderBoard, () => {
+          if (cur && cur.id === g) $('#ao-board-sub', root).textContent = 'Score could not be saved.';
+        });
       }
       renderStats(); renderCabs();
     }
@@ -286,6 +296,27 @@
         deal();
         return () => L.end();
       }
+    },
+    polyrush: {
+      name: 'Poly Rush', unit: 'Seconds survived', low: false, core: '3D highway core',
+      icon: ic('<path d="M4 23h4m-2 0V9l12-3v13M8 12l10-3M8 17l10-3M20 19h2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="24" r="2"/><circle cx="21" cy="24" r="2"/>'),
+      bestTxt: n => Number(n).toFixed(1) + 's',
+      keys: [[['A / D', 'ARROWS'], 'Steer'], [['W', 'UP'], 'Accelerate'], [['S', 'DOWN'], 'Brake'], [['SPACE'], 'Drift']],
+      guide: [['Stay on the road', 'and steer through sweeping turns.'], ['Dodge traffic', 'to keep your run alive.'], ['Build speed', 'to unleash wind trails.']],
+      mount(el, a) {
+        const frame = document.createElement('iframe');
+        frame.className = 'ao-race-frame'; frame.title = 'Poly Rush racing game'; frame.src = 'game/polyrush/index.html?embedded=1'; frame.allow = 'autoplay';
+        el.classList.add('polyrush'); el.appendChild(frame);
+        const onMessage = e => {
+          if (e.source !== frame.contentWindow || e.origin !== location.origin || !e.data) return;
+          if (e.data.type === 'polyrush-run-ended') {
+            const score = Number(e.data.seconds);
+            if (Number.isFinite(score) && score > 0) a.end(score);
+          } else if (e.data.type === 'polyrush-close') $('#ao-close', root).click();
+        };
+        window.addEventListener('message', onMessage);
+        return () => { window.removeEventListener('message', onMessage); frame.remove(); el.classList.remove('polyrush'); };
+      }
     }
   };
   Object.entries(GAMES).forEach(([id, g]) => g.id = id);
@@ -294,13 +325,14 @@
   const rowsEl = $('#ao-rows', root);
   async function renderBoard() {
     if (!cur) return; const g = cur.id; let list = [];
-    try { list = await getScores(g) || []; } catch (e) {}
+    let unavailable = false;
+    try { list = await getScores(g) || []; } catch (e) { unavailable = true; }
     if (!cur || cur.id !== g) return;
     rowsEl.innerHTML = Array.from({ length: 10 }, (_, i) => {
       const e = list[i];
       return '<li class="' + (i === 0 ? 'top' : '') + '"><span>#' + String(i + 1).padStart(2, '0') + '</span><span>' + (e ? esc(e.name) : 'N/A') + '</span><span>' + (e ? e.score : 0) + '</span></li>';
     }).join('');
-    $('#ao-board-sub', root).textContent = cur.name + ' / ' + cur.unit;
+    $('#ao-board-sub', root).textContent = unavailable ? 'Leaderboard unavailable.' : cur.name + ' / ' + cur.unit;
   }
   function renderStats() {
     $('#ao-runs', root).textContent = runs;

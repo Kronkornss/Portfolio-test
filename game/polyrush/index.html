@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Poly Rush</title><link rel="stylesheet" href="style.css"></head><body>
+<div id="app"><canvas id="c"></canvas>
+<div id="hud" class="layer">
+ <div class="chip"><small>Time</small><b id="time">0.0</b><small>s</small></div>
+ <button id="pause" aria-label="Pause"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 4h4v16H6zM14 4h4v16h-4z" fill="currentColor"/></svg></button>
+ <button id="mute" aria-label="Mute sound"><svg viewBox="0 0 24 24" width="22" height="22"><path class="w" d="M4 9v6h4l5 4V5L8 9zM16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="x" d="M3 3l18 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+ <div class="chip r"><small>Best</small><b id="hbest">0.0</b><small>s</small></div>
+ <div id="speedo"><div><b id="kph">0</b><small>km/h</small></div><div class="bar"><i id="bar"></i></div><small id="dist">0 m</small> <small id="phase">Day</small></div>
+</div>
+<div id="touch">
+ <div class="grp"><button data-k="l" aria-label="Steer left"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M15 4 7 12l8 8z" fill="currentColor"/></svg></button><button data-k="r" aria-label="Steer right"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M9 4l8 8-8 8z" fill="currentColor"/></svg></button></div>
+ <div class="grp col"><button data-k="up" class="gas">Gas</button><button data-k="dn">Brake</button></div>
+</div>
+<section id="menu" class="screen show">
+ <div class="eyebrow"><i></i><span>Night circuit</span><i></i></div>
+ <h1><span>Poly</span><span class="o">Rush</span></h1>
+ <p class="sub">Endless low-poly highway. Dodge traffic, last longer.</p>
+ <p class="bestline">Best run <b id="mbest">0.0</b> s</p>
+ <button class="btn" id="start">Start engine</button>
+</section>
+<section id="pausescr" class="screen"><h2>Paused</h2><button class="btn" id="resume">Resume</button><button class="btn ghost" id="pmenu">Quit to menu</button></section>
+<section id="over" class="screen"><h2 class="crash">Crashed</h2>
+ <div class="res"><div><small>Survived</small><b id="ftime">0.0</b><small>s</small></div><div><small>Best</small><b id="fbest">0.0</b><small>s</small></div></div>
+ <p id="nb">New best time</p>
+ <button class="btn" id="restart">Drive again</button><button class="btn ghost" id="omenu">Back to menu</button></section>
+</div>
+<script src="models.js"></script>
+<script src="game.js"></script>
+</body></html>

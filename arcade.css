@@ -22,6 +22,10 @@
 #arcade-overlay[data-game=snake],.ao-rip[data-game=snake]{--acrgb:0,255,136;--ac:#00ff88;--btn:#00ff88;--ink:#003919}
 #arcade-overlay[data-game=coin],.ao-rip[data-game=coin]{--acrgb:255,185,95;--ac:#ffb95f;--btn:#ffd8ad;--ink:#472a00}
 #arcade-overlay[data-game=memory],.ao-rip[data-game=memory]{--acrgb:255,42,133;--ac:#ff2a85;--btn:#aa0266;--ink:#fff}
+#arcade-overlay[data-game=polyrush],.ao-rip[data-game=polyrush]{--acrgb:154,24,39;--ac:#c52e3e;--btn:#741321;--ink:#fff}
+#arcade-overlay .ao-cabinet[data-g=polyrush]{--c:#b52335}
+.ao-screen.polyrush{max-width:none;aspect-ratio:16/10;background:#100609;border:1px solid rgba(197,46,62,.42);box-shadow:inset 0 0 30px rgba(106,14,30,.25)}
+.ao-race-frame{display:block;width:100%;height:100%;border:0;background:#100609}
 #arcade-overlay,.ao-rip{--ao-backdrop:
   radial-gradient(720px 480px at 50% -60px,rgba(var(--acrgb),.15),transparent 70%),
   radial-gradient(260px 260px at 4% 40%,rgba(var(--acrgb),.10),transparent 70%),
