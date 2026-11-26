@@ -1,7 +1,6 @@
 const { neon } = require('@neondatabase/serverless');
 
 const GAMES = new Set(['snake', 'coin', 'memory', 'polyrush']);
-let schemaPromise;
 
 function respond(res, status, body) {
   return res.status(status).json(body);
@@ -9,24 +8,6 @@ function respond(res, status, body) {
 
 function validGame(value) {
   return typeof value === 'string' && GAMES.has(value);
-}
-
-async function ensureSchema(sql) {
-  if (!schemaPromise) {
-    schemaPromise = sql`
-      CREATE TABLE IF NOT EXISTS arcade_scores (
-        game TEXT NOT NULL CHECK (game IN ('snake', 'coin', 'memory', 'polyrush')),
-        player_name TEXT NOT NULL CHECK (char_length(player_name) BETWEEN 1 AND 14),
-        score DOUBLE PRECISION NOT NULL CHECK (score > 0 AND score < 'Infinity'::double precision),
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        PRIMARY KEY (game, player_name)
-      )
-    `.catch(error => {
-      schemaPromise = null;
-      throw error;
-    });
-  }
-  await schemaPromise;
 }
 
 module.exports = async function leaderboard(req, res) {
@@ -56,7 +37,7 @@ module.exports = async function leaderboard(req, res) {
     }
 
     score = Number(body.score);
-    if (!Number.isFinite(score) || score <= 0 || score > Number.MAX_SAFE_INTEGER ||
+    if (!Number.isFinite(score) || score <= 0 || score > 1000000 ||
         (game !== 'polyrush' && !Number.isInteger(score))) {
       return respond(res, 400, { error: 'Invalid score' });
     }
@@ -74,8 +55,6 @@ module.exports = async function leaderboard(req, res) {
 
   const sql = neon(process.env.DATABASE_URL);
   try {
-    await ensureSchema(sql);
-
     if (req.method === 'GET') {
       const scores = game === 'memory'
         ? await sql`
@@ -101,7 +80,7 @@ module.exports = async function leaderboard(req, res) {
       ? await sql`
           INSERT INTO arcade_scores (game, player_name, score)
           VALUES (${game}, ${name}, ${score})
-          ON CONFLICT (game, player_name) DO UPDATE
+          ON CONFLICT (game, (upper(btrim(player_name::text)))) DO UPDATE
           SET score = EXCLUDED.score, created_at = now()
           WHERE arcade_scores.score > EXCLUDED.score
           RETURNING score
@@ -109,7 +88,7 @@ module.exports = async function leaderboard(req, res) {
       : await sql`
           INSERT INTO arcade_scores (game, player_name, score)
           VALUES (${game}, ${name}, ${score})
-          ON CONFLICT (game, player_name) DO UPDATE
+          ON CONFLICT (game, (upper(btrim(player_name::text)))) DO UPDATE
           SET score = EXCLUDED.score, created_at = now()
           WHERE arcade_scores.score < EXCLUDED.score
           RETURNING score

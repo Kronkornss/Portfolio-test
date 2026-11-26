@@ -18,7 +18,7 @@ npm install
 npx vercel dev
 ```
 
-The API creates the `arcade_scores` table on its first request. The equivalent SQL schema is in `database/leaderboard.sql`.
+Apply `database/leaderboard.sql` to the Neon database before running the API. It preserves existing scores, adds Poly Rush to the allowed games, and stores fractional survival times.
 
 ## Deployment
 
