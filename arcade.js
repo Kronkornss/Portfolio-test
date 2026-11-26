@@ -104,7 +104,7 @@
           '<section class="ao-card soft"><div class="ao-card-h"><span class="ao-label"><i class="fa-regular fa-circle-question"></i>&nbsp; How to play</span></div><div class="ao-guide" id="ao-guide"></div></section>' +
         '</main>' +
         '<aside class="ao-right ao-col">' +
-          '<section class="ao-card"><div class="ao-card-h"><h2><i class="fa-solid fa-layer-group"></i>Cabinets</h2><span class="ao-tag">3 installed</span></div><div class="ao-cabs" id="ao-cabs"></div></section>' +
+          '<section class="ao-card"><div class="ao-card-h"><h2><i class="fa-solid fa-layer-group"></i>Cabinets</h2><span class="ao-tag">4 installed</span></div><div class="ao-cabs" id="ao-cabs"></div></section>' +
           '<section class="ao-card soft"><div class="ao-sound-row"><span><i class="fa-solid fa-volume-high" id="ao-sicon"></i><span id="ao-stext">8-bit audio synth</span></span>' +
             '<button class="ao-switch" id="ao-sound" type="button" role="switch" aria-checked="true" aria-label="Game sounds"></button></div>' +
             '<p class="ao-note">Site music is paused while the arcade is open.</p></section>' +
@@ -285,6 +285,27 @@
         }
         deal();
         return () => L.end();
+      }
+    },
+    polyrush: {
+      name: 'Poly Rush', unit: 'Seconds survived', low: false, core: '3D highway core',
+      icon: ic('<path d="M4 23h4m-2 0V9l12-3v13M8 12l10-3M8 17l10-3M20 19h2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="24" r="2"/><circle cx="21" cy="24" r="2"/>'),
+      bestTxt: n => Number(n).toFixed(1) + 's',
+      keys: [[['A / D', 'ARROWS'], 'Steer'], [['W', 'UP'], 'Accelerate'], [['S', 'DOWN'], 'Brake'], [['SPACE'], 'Drift']],
+      guide: [['Stay on the road', 'and steer through sweeping turns.'], ['Dodge traffic', 'to keep your run alive.'], ['Build speed', 'to unleash wind trails.']],
+      mount(el, a) {
+        const frame = document.createElement('iframe');
+        frame.className = 'ao-race-frame'; frame.title = 'Poly Rush racing game'; frame.src = 'game/polyrush/index.html?embedded=1'; frame.allow = 'autoplay';
+        el.classList.add('polyrush'); el.appendChild(frame);
+        const onMessage = e => {
+          if (e.source !== frame.contentWindow || e.origin !== location.origin || !e.data) return;
+          if (e.data.type === 'polyrush-run-ended') {
+            const score = Number(e.data.seconds);
+            if (Number.isFinite(score) && score > 0) a.end(score);
+          } else if (e.data.type === 'polyrush-close') $('#ao-close', root).click();
+        };
+        window.addEventListener('message', onMessage);
+        return () => { window.removeEventListener('message', onMessage); frame.remove(); el.classList.remove('polyrush'); };
       }
     }
   };
