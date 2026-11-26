@@ -1,0 +1,9 @@
+{
+  "name": "luigi-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Luigi A. Lising's personal portfolio and arcade",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.1"
+  }
+}

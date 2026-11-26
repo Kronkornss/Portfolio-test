@@ -1,4 +1,4 @@
-/* Arcade: launch panel + fullscreen overlay. Games: Snake, Flip the Coin, Memory.
+/* Arcade: launch panel + fullscreen overlay. Games: Snake, Flip the Coin, Memory, Poly Rush.
    Keys, timers and sounds only exist while the overlay is open. */
 (() => {
   'use strict';
@@ -10,15 +10,23 @@
     set(k, v) { try { localStorage.setItem('pf:' + k, JSON.stringify(v)); } catch (e) {} }
   };
 
-  /* =====================================================================
-     DATA ACCESS: the ONLY place scores are read or written.
-     To add a database later, change just these two functions (keep them async).
-       getScores(game)                 -> [{ name, score }], best first
-       submitScore(game, name, score)  -> { ok: boolean }
-     game is 'snake' | 'coin' | 'memory'. Memory is "fewest moves", so lower is better.
-     ===================================================================== */
-  async function getScores(game) { return []; }
-  async function submitScore(game, name, score) { return { ok: false }; }
+  /* Shared scores are read and written through the same-origin API. */
+  async function getScores(game) {
+    const response = await fetch('/api/leaderboard?game=' + encodeURIComponent(game));
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not load leaderboard');
+    return result.scores;
+  }
+  async function submitScore(game, name, score) {
+    const response = await fetch('/api/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game, name, score })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not submit score');
+    return result;
+  }
 
   const CFG = {
     coin: { heads: 'resources/heads.svg', tails: 'resources/tails.svg' },
@@ -130,7 +138,9 @@
       if (score > 0) {
         const b = getBest(g);
         if (b == null || (cur.low ? score < b : score > b)) store.set(bestKey(g), score);
-        submitScore(g, handle(), score).then(renderBoard, () => {});
+        submitScore(g, handle(), score).then(renderBoard, () => {
+          if (cur && cur.id === g) $('#ao-board-sub', root).textContent = 'Score could not be saved.';
+        });
       }
       renderStats(); renderCabs();
     }
@@ -315,13 +325,14 @@
   const rowsEl = $('#ao-rows', root);
   async function renderBoard() {
     if (!cur) return; const g = cur.id; let list = [];
-    try { list = await getScores(g) || []; } catch (e) {}
+    let unavailable = false;
+    try { list = await getScores(g) || []; } catch (e) { unavailable = true; }
     if (!cur || cur.id !== g) return;
     rowsEl.innerHTML = Array.from({ length: 10 }, (_, i) => {
       const e = list[i];
       return '<li class="' + (i === 0 ? 'top' : '') + '"><span>#' + String(i + 1).padStart(2, '0') + '</span><span>' + (e ? esc(e.name) : 'N/A') + '</span><span>' + (e ? e.score : 0) + '</span></li>';
     }).join('');
-    $('#ao-board-sub', root).textContent = cur.name + ' / ' + cur.unit;
+    $('#ao-board-sub', root).textContent = unavailable ? 'Leaderboard unavailable.' : cur.name + ' / ' + cur.unit;
   }
   function renderStats() {
     $('#ao-runs', root).textContent = runs;
