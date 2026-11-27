@@ -675,54 +675,97 @@ setTheme(store.get('theme', 'dark'));
   addEventListener('resize', constrain, { passive: true });
 })();
 
-/* ---------- Draggable tape player (drag anywhere that is not a button; arrow keys when the title is focused; double-click the title to reset) ---------- */
+/* ---------- Tape player: drag it, scale it to the screen, minimize it to a little cassette ----------
+   Drag anywhere that is not a button; arrow keys when the title (or the cassette) is focused; double-click the title to reset.
+   The minus button in the title bar shrinks the deck to a button-less cassette (reels spin while playing); tap the cassette to open it again. */
 (() => {
-  const deck = $('.retro-player'), grip = $('#deck-grip');
-  if (!deck || !grip) return;
+  const deck = $('.retro-player'), grip = $('#deck-grip'), minBtn = $('#deck-min'), tape = $('#mini-tape');
+  if (!deck || !grip || !minBtn || !tape) return;
+  const FULL_W = 320, FULL_H = 240;                 // full deck size before scaling
+  const coarse = matchMedia('(pointer: coarse)');
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+  let mini = !!store.get('deck-mini', false);
+
   const place = (x, y) => {
     const r = deck.getBoundingClientRect();
     x = clamp(x, 6, innerWidth - r.width - 6);
     y = clamp(y, 6, innerHeight - r.height - 6);
     deck.style.left = x + 'px'; deck.style.top = y + 'px';
     deck.style.right = 'auto'; deck.style.bottom = 'auto';
+    deck.classList.add('is-placed');
     return { x, y };
   };
+  const scaleFor = () => {
+    if (mini) return coarse.matches ? 1.15 : 1;
+    let k = Math.min(1, (innerWidth - 20) / FULL_W);                                                      // phones: shrink to fit the width
+    if (coarse.matches && innerWidth >= 700 && innerHeight >= 600) k = Math.min(1.3, innerWidth / 640);   // tablets: a bit bigger for fingers
+    return Math.max(.6, Math.min(k, (innerHeight - 20) / FULL_H));                                        // short landscape screens
+  };
+  const apply = () => {
+    deck.style.setProperty('--k', scaleFor().toFixed(3));
+    if (deck.style.left) { const r = deck.getBoundingClientRect(); place(r.left, r.top); }
+  };
+  const setMini = (v, focus) => {
+    mini = v;
+    deck.classList.toggle('is-mini', v);
+    deck.classList.add('is-pop'); setTimeout(() => deck.classList.remove('is-pop'), 260);
+    minBtn.setAttribute('aria-expanded', String(!v));
+    store.set('deck-mini', v);
+    apply();
+    if (focus) (v ? tape : minBtn).focus();
+  };
+
+  deck.classList.toggle('is-mini', mini);
+  apply();
   const saved = store.get('deck-pos', null);
   if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) place(saved.x, saved.y);
 
+  minBtn.addEventListener('click', () => setMini(true, true));
+  tape.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMini(false, true); }
+  });
+
+  // pointer: a drag moves the deck; a plain tap on the cassette opens it
   let drag = null;
   deck.addEventListener('pointerdown', e => {
     if (e.button > 0 || e.target.closest('button, input, a')) return;
     const r = deck.getBoundingClientRect();
-    drag = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top };
+    drag = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, moved: false };
     deck.setPointerCapture(e.pointerId);
-    deck.classList.add('is-dragging');
     e.preventDefault();
   });
   deck.addEventListener('pointermove', e => {
-    if (drag && e.pointerId === drag.id) place(e.clientX - drag.dx, e.clientY - drag.dy);
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved) {
+      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 5) return;
+      drag.moved = true; deck.classList.add('is-dragging');
+    }
+    place(e.clientX - drag.dx, e.clientY - drag.dy);
   });
   const end = e => {
     if (!drag || e.pointerId !== drag.id) return;
+    const tap = !drag.moved;
     drag = null; deck.classList.remove('is-dragging');
-    const r = deck.getBoundingClientRect(); store.set('deck-pos', { x: r.left, y: r.top });
+    if (!tap) { const r = deck.getBoundingClientRect(); store.set('deck-pos', { x: r.left, y: r.top }); }
+    else if (mini && e.type === 'pointerup') setMini(false, true);
   };
   deck.addEventListener('pointerup', end);
   deck.addEventListener('pointercancel', end);
 
-  grip.addEventListener('keydown', e => {
+  const nudge = e => {
     const step = e.shiftKey ? 48 : 12, k = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
     if (!k) return;
     e.preventDefault();
     const r = deck.getBoundingClientRect(), p = place(r.left + k[0], r.top + k[1]);
     store.set('deck-pos', p);
-  });
+  };
+  grip.addEventListener('keydown', nudge);
+  tape.addEventListener('keydown', nudge);
   grip.addEventListener('dblclick', () => {
     deck.style.left = deck.style.top = deck.style.right = deck.style.bottom = '';
+    deck.classList.remove('is-placed');
     store.set('deck-pos', null);
+    apply();
   });
-  addEventListener('resize', () => {
-    if (deck.style.left) { const r = deck.getBoundingClientRect(); place(r.left, r.top); }
-  });
+  addEventListener('resize', apply, { passive: true });
 })();
