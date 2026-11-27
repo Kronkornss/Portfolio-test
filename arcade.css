@@ -85,6 +85,7 @@
 .ao-rows li span:last-child{font-weight:700;letter-spacing:.12em}
 .ao-rows li.top{background:rgba(var(--acrgb),.12);border:1px solid rgba(var(--acrgb),.45);box-shadow:0 0 12px rgba(var(--acrgb),.2);color:var(--pri)}
 .ao-rows li.top span:first-child,.ao-rows li.top span:last-child{color:var(--ac)}
+.ao-rows li.notice{display:block;color:var(--outline);text-align:center}
 .ao-handle{margin-top:12px;padding-top:10px;border-top:1px solid rgba(59,75,61,.3);display:flex;flex-direction:column;gap:6px}
 .ao-handle div{position:relative;display:flex;align-items:center}
 .ao-handle input{width:100%;padding:8px 58px 8px 12px;border-radius:8px;background:var(--s-lo);border:1px solid rgba(59,75,61,.4);color:var(--ac);
