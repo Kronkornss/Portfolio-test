@@ -1,0 +1,367 @@
+/* ---------- Scene ---------- */
+
+#pearl-bg.scene {
+  --size: min(60vw, 52vh, 440px);   /* pearl diameter */
+  --rw: calc(var(--size) * .9);     /* base ripple width */
+  --water-y: 73%;                   /* where the ripples centre */
+  --px: 0; --py: 0; --lx: 0;        /* parallax, set by script.js */
+
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  /* Warm pearl room: no blue, no pure white */
+  background: radial-gradient(ellipse 85% 70% at 50% 38%,
+    #f4efee 0%, #e8e1e3 48%, #cbc2ca 100%);
+}
+
+/* ---------- Light ---------- */
+
+.light-beam {
+  position: absolute;
+  left: 50%;
+  top: -5%;
+  width: 90%;
+  height: 80%;
+  transform: translateX(-50%);
+  background: conic-gradient(from 180deg at 50% 0%,
+    transparent 148deg, rgba(255,250,244,.2) 170deg,
+    rgba(255,250,244,.34) 180deg, rgba(255,250,244,.2) 190deg,
+    transparent 212deg);
+  filter: blur(28px);
+  -webkit-mask-image: linear-gradient(#000, transparent 85%);
+          mask-image: linear-gradient(#000, transparent 85%);
+  animation: breathe 7s ease-in-out infinite;
+}
+
+/* Blush and champagne halo: purity with kindness */
+.ambient-light {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: calc(var(--size) * 1.9);
+  height: calc(var(--size) * 1.9);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255,238,234,.85) 0%, rgba(250,232,232,.5) 35%,
+    rgba(244,236,240,.2) 60%, transparent 75%);
+  filter: blur(40px);
+  animation: breathe 7s ease-in-out infinite;
+}
+
+/* ---------- Pearl ---------- */
+
+.orb-wrap {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: var(--size);
+  height: var(--size);
+  transform: translate(-50%, -50%);
+  translate: calc(var(--px) * 1px) calc(var(--py) * 1px);
+  z-index: 4;
+}
+
+.orb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  animation: float 7s ease-in-out infinite;
+
+  background: radial-gradient(circle,
+    #f8f4f1 0%, #eee8ea 50%, #dcd5dc 82%, #c9c0cb 100%);
+
+  box-shadow:
+    inset -26px -34px 70px rgba(150,132,155,.4),   /* form shadow */
+    inset 14px 16px 44px rgba(255,252,247,.8),     /* soft fill */
+    inset 0 0 22px rgba(120,100,128,.2),           /* glassy dark rim */
+    inset 0 0 0 1.5px rgba(255,255,255,.5),        /* fine edge */
+    0 34px 80px rgba(140,122,148,.35),
+    0 0 110px rgba(255,226,232,.55);               /* blush glow */
+}
+
+/* Opalescent sheen: rose, champagne, lilac */
+.orb-iridescence {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 20deg,
+    rgba(255,205,220,.55), rgba(250,232,205,.5), rgba(232,214,245,.5),
+    rgba(255,220,205,.5), rgba(240,236,244,.45), rgba(255,205,220,.55));
+  -webkit-mask-image: radial-gradient(circle, transparent 38%, #000 92%);
+          mask-image: radial-gradient(circle, transparent 38%, #000 92%);
+  opacity: .75;
+  animation: spin 40s linear infinite;
+}
+
+/* Glossy reflection of the water: dark horizon line, warm bright base */
+.orb-bounce {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 62% 36% at 50% 100%,
+      rgba(255,236,222,.85) 0%, rgba(255,226,214,.35) 45%, transparent 72%),
+    linear-gradient(to bottom,
+      transparent 56%, rgba(120,100,125,.15) 65%, transparent 74%);
+}
+
+.orb-shimmer {
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(115deg,
+    transparent 40%, rgba(255,255,255,.5) 50%, transparent 60%);
+  filter: blur(14px);
+  opacity: 0;
+  animation: sweep 10s ease-in-out infinite;
+}
+
+/* Softbox reflection */
+.orb-highlight {
+  position: absolute;
+  top: 10%;
+  left: 16%;
+  width: 46%;
+  height: 27%;
+  border-radius: 50%;
+  transform: rotate(-28deg);
+  translate: calc(var(--lx) * 1px) calc(var(--lx) * .6px);
+  background: radial-gradient(ellipse,
+    rgba(255,255,255,.97) 0%, rgba(255,255,255,.5) 50%, transparent 78%);
+  filter: blur(7px);
+}
+
+/* Crisp glint */
+.orb-spec {
+  position: absolute;
+  top: 16%;
+  left: 27%;
+  width: 7%;
+  height: 4.5%;
+  border-radius: 50%;
+  transform: rotate(-28deg);
+  translate: calc(var(--lx) * 1px) calc(var(--lx) * .6px);
+  background: #fff;
+  filter: blur(1.5px);
+  animation: twinkle 7s ease-in-out infinite;
+}
+
+/* ---------- Water ---------- */
+
+/* Body of water: dusty mauve-silver, mid-toned so highlights stay soft */
+.water-surface {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 56%;
+  background:
+    radial-gradient(ellipse 60% 38% at 50% 34%,
+      rgba(255,246,238,.5), transparent 72%),
+    linear-gradient(to bottom,
+      rgba(214,204,212,0) 0%, rgba(206,194,206,.55) 22%,
+      rgba(176,162,182,.85) 100%);
+}
+
+/* Horizon streaks, like the bright bands at the top of the photo */
+.water-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom,
+    transparent 8%, rgba(255,248,240,.5) 11%, transparent 15%,
+    transparent 21%, rgba(255,244,236,.3) 23%, transparent 27%);
+  filter: blur(3px);
+}
+
+/* Warm rose-gold glints in the water */
+.water-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 9% 2.5% at 18% 52%, rgba(255,205,180,.5), transparent),
+    radial-gradient(ellipse 7% 2% at 80% 44%, rgba(255,214,190,.45), transparent),
+    radial-gradient(ellipse 11% 2.5% at 70% 82%, rgba(255,200,185,.4), transparent),
+    radial-gradient(ellipse 8% 2% at 28% 78%, rgba(250,224,190,.45), transparent);
+  animation: breathe 6s ease-in-out infinite;
+}
+
+.water {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 44%, #000 60%);
+          mask-image: linear-gradient(to bottom, transparent 44%, #000 60%);
+}
+
+/* Glossy ring: bright pearl crest (::before) over a soft trough shadow */
+.wave,
+.tap-ripple {
+  position: absolute;
+  border-radius: 50%;
+  box-shadow:
+    0 5px 12px -2px rgba(105,88,110,.4),
+    inset 0 -4px 10px rgba(255,248,240,.5),
+    inset 0 3px 8px rgba(105,88,110,.2);
+}
+
+.wave::before,
+.tap-ripple::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 3px;
+  background: conic-gradient(from 90deg,
+    #fff8ee, #ffe3dc, #fffdf8, #ece0f0,
+    #fff6e6, #ffe0d2, #fffdf8, #fff8ee);
+  opacity: .85;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+/* Rings share a vanishing point: the near edge travels further than the far edge */
+.wave {
+  left: 50%;
+  top: var(--water-y);
+  width: var(--rw);
+  height: calc(var(--rw) * .26);
+  translate: -50% -38%;
+  transform-origin: 50% 38%;
+  opacity: 0;
+  animation: wave-expand 9.6s cubic-bezier(.3,.5,.4,1) infinite;
+  animation-delay: calc(var(--i) * -1.2s);
+}
+
+.tap-ripple {
+  width: 280px;
+  height: 78px;
+  margin: -39px 0 0 -140px;
+  opacity: 0;
+  pointer-events: none;
+  animation: tap 2.6s cubic-bezier(.2,.6,.3,1) forwards;
+}
+
+/* Where the pearl is about to land */
+.crater {
+  position: absolute;
+  left: 50%;
+  top: var(--water-y);
+  width: calc(var(--size) * .36);
+  height: calc(var(--size) * .09);
+  transform: translate(-50%, -50%);
+  translate: calc(var(--px) * .6px) 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse,
+    rgba(84,68,92,.6) 0%, rgba(120,104,128,.32) 45%, transparent 72%);
+  box-shadow: 0 2px 8px rgba(255,246,238,.45);
+  filter: blur(2px);
+  z-index: 3;
+}
+
+/* ---------- Shadow & reflection ---------- */
+
+.ground-shadow,
+.reflection {
+  position: absolute;
+  left: 50%;
+  top: var(--water-y);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 3;
+  animation: shadow 7s ease-in-out infinite;
+}
+
+.ground-shadow {
+  width: calc(var(--size) * .8);
+  height: calc(var(--size) * .16);
+  translate: calc(var(--px) * .6px) 0;
+  background: radial-gradient(ellipse,
+    rgba(100,84,108,.32) 0%, rgba(140,124,148,.16) 45%, transparent 75%);
+  filter: blur(16px);
+}
+
+.reflection {
+  width: calc(var(--size) * .5);
+  height: calc(var(--size) * .1);
+  translate: calc(var(--px) * .5px) 0;
+  background: radial-gradient(ellipse,
+    rgba(255,246,238,.85) 0%, rgba(240,226,232,.45) 50%, transparent 80%);
+  filter: blur(8px);
+}
+
+/* Fine grain keeps the gradients smooth */
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  opacity: .35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .48  0 0 0 0 .52  0 0 0 .35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ---------- Animations ---------- */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-24px); }
+}
+
+@keyframes shadow {
+  0%, 100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+  50%      { transform: translate(-50%, -50%) scale(.86); opacity: .6; }
+}
+
+@keyframes breathe { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes twinkle { 0%, 100% { opacity: .8; } 50% { opacity: 1; } }
+
+@keyframes sweep {
+  0%, 100% { transform: translateX(-55%); opacity: 0; }
+  50%      { transform: translateX(55%);  opacity: .8; }
+}
+
+@keyframes wave-expand {
+  0%   { transform: scale(.12); opacity: 0; }
+  10%  { opacity: .95; }
+  55%  { opacity: .6; }
+  100% { transform: scale(3.6); opacity: 0; }
+}
+
+@keyframes tap {
+  0%   { transform: scale(.2); opacity: 0; }
+  15%  { opacity: .9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+  .scene { --size: min(76vw, 46vh); --water-y: 72%; }
+  .orb-wrap, .ambient-light { top: 37%; }
+}
+
+/* ---------- Accessibility ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .orb, .orb-iridescence, .orb-shimmer, .orb-spec, .light-beam,
+  .ambient-light, .water-surface::after, .ground-shadow, .reflection {
+    animation: none;
+  }
+
+  .ground-shadow, .reflection { transform: translate(-50%, -50%); }
+
+  /* Still frame: waves stay visible */
+  .wave {
+    animation: none;
+    transform: scale(calc(.3 + var(--i) * .4));
+    opacity: calc(.95 - var(--i) * .1);
+  }
+}

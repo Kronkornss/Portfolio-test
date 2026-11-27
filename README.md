@@ -1,33 +1,52 @@
-# Luigi Portfolio
+# Luigi A. Lising — Portfolio
 
-Luigi A. Lising's personal portfolio and browser arcade, featuring Snake, Flip the Coin, Memory, and Poly Rush.
+A static, single-page personal portfolio showcasing web development work, interests, and a small browser-based arcade.
+
+![Portfolio homepage](screenshots/portfolio-home.png)
 
 ## Features
 
-- Responsive portfolio with an interactive arcade
-- Poly Rush 3D racing game
-- Shared, per-game leaderboards backed by PostgreSQL
-- Per-browser personal-best stats
+- Dark, red, and light themes with animated hero backgrounds
+- About, skills, and interests sections
+- Music player and live Discord presence card
+- Arcade with Snake, Flip the Coin, Memory, and Poly Rush
 
-## Run locally
+## Clone and run locally
 
-Serve the project root with a local static server to browse the portfolio. To test the leaderboard API locally, use Vercel's development server and set `DATABASE_URL` to a PostgreSQL connection string.
+Replace `<repository-url>` with the GitHub clone URL once one exists. The site has no build step or package installation:
 
 ```sh
-npm install
-npx vercel dev
+git clone <repository-url> Portfolio-101
+cd Portfolio-101
+python -m http.server 8000
 ```
 
-Apply `database/leaderboard.sql` to the Neon database before running the API. It preserves existing scores, adds Poly Rush to the allowed games, and stores fractional survival times.
+Open `http://localhost:8000`. This example requires Python; any static file server can be used instead. An internet connection is needed for the externally hosted fonts, Font Awesome, Three.js, and Discord presence service.
 
-## Deployment
+## Publish with GitHub Pages
 
-The site is deployed on Vercel from the `main` branch. Configure `DATABASE_URL` in the Vercel project's environment variables for Production and Preview deployments. The connection string must remain server-side; it is only read by `api/leaderboard.js`.
+This repository currently has no deployment workflow. To publish without changing the site architecture, open **Settings → Pages**, choose **Deploy from a branch**, select the branch containing the site and the **/(root)** folder, then save. The entry point is `index.html` at the repository root.
 
-## Project structure
+## Before making the repository public
 
-- `index.html`, `style.css`, `script.js` — portfolio
-- `arcade.js`, `arcade.css` — arcade interface and score reporting
-- `game/polyrush/` — Poly Rush game
-- `api/leaderboard.js` — shared leaderboard API
-- `database/leaderboard.sql` — PostgreSQL leaderboard schema
+- Confirm that the contact/social links and Discord user ID already present in the page are intended to be public.
+- Review the image, cover-art, game-art, model, and music sources and permissions listed in [CREDITS.md](CREDITS.md). Their provenance is not fully recorded in this project.
+- No `LICENSE` file is included. This project does not grant reuse or redistribution rights; choose and add a license only after the rights to included assets are clear.
+
+## Project layout
+
+- `index.html`, `style.css`, `script.js` — portfolio entry point and core presentation
+- `arcade.js`, `arcade.css`, `game/` — arcade interface and Poly Rush game
+- `interests.js`, `interests.css`, `pearl.css` — interests section and theme styling
+- `hero-bg.js`, `red-hero.js`, `pearl.js` — theme backgrounds loaded dynamically
+- `images/`, `memitem/`, `resources/`, `music/` — site media and game assets
+- `screenshots/` — repository preview image
+
+The optional model conversion helper in `game/polyrush/convert.mjs` imports Three.js; its package setup is not included.
+
+## Customization
+
+- **Themes and backgrounds:** theme selection is in `script.js`; theme colors and background image paths are in `style.css`. The animated theme backgrounds are `hero-bg.js`, `red-hero.js`, and `pearl.js`, with light-theme styling in `pearl.css`.
+- **Sword and sheath artwork:** per-theme image paths and sizing are configured in `script.js`. Replace the corresponding files in `images/`: `Katana_1.png` and `Sheath_1.png` (dark), `katana-red.png` and `sheath-red-v2.png` (red), or `katana-light.png` and `sheath-light-v2.png` (light).
+- **Profile card:** the card markup is in `index.html`, its appearance is in `style.css`, and live Discord data is handled by `discord-presence.js`.
+- **Music:** edit the `MUSIC` list in `script.js` and place the audio files under `music/` (currently `song1.mp3`, `song2.mp3`, and `song3.mp3`).

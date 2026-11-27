@@ -14,17 +14,41 @@ addEventListener('load', () => setTimeout(endBoot, 600));
 setTimeout(endBoot, 2000);
 
 /* ---------- Themes ---------- */
+const backgroundLoads = {};
+function loadThemeBackground(name, src) {
+  if (backgroundLoads[name]) return backgroundLoads[name];
+  backgroundLoads[name] = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => {
+      console.error('[portfolio] Could not load the ' + name + ' hero background.');
+      reject(new Error('Could not load ' + src));
+    };
+    document.body.appendChild(script);
+  });
+  return backgroundLoads[name];
+}
+
 function setTheme(t) {
-  document.body.classList.remove('theme-light', 'theme-green');
-  if (t !== 'dark') document.body.classList.add('theme-' + t);
+  if (t === 'green') t = 'red';
+  if (!['dark', 'red', 'light'].includes(t)) t = 'dark';
+  document.documentElement.dataset.theme = t;
   $$('.themes button').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === t));
+  const colors = { dark: '#0b0909', red: '#10090b', light: '#eee9dc' };
+  $('#theme-color').setAttribute('content', colors[t]);
   store.set('theme', t);
+  window.dispatchEvent(new CustomEvent('portfolio-theme-change', { detail: { theme: t } }));
+  const backgrounds = {
+    dark: ['dark', 'hero-bg.js'],
+    red: ['red', 'red-hero.js'],
+    light: ['pearl', 'pearl.js']
+  };
+  const [name, src] = backgrounds[t];
+  loadThemeBackground(name, src).catch(() => {});
 }
 $$('.themes button').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.theme)));
 setTheme(store.get('theme', 'dark'));
-const dock = $('.dock');
-addEventListener('scroll', () => { dock.open = false; }, { passive: true });
-document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(e.target)) dock.open = false; });
 
 /* ---------- Music (edit MUSIC to add songs) ---------- */
 (() => {
@@ -33,23 +57,85 @@ document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(
     { title: 'Nope youre already too late', src: 'music/song2.mp3' },
     { title: 'Disillusioned', src: 'music/song3.mp3' }
   ];
-  const audio = $('#audio'), icon = $('#play i'), name = $('#track');
+  const audio = $('#audio');
+  const controls = {
+    playerTrack: $('#player-track'),
+    playerNumber: $('#player-track-number'),
+    status: $('#player-status'),
+    current: $('#player-current-time'),
+    duration: $('#player-duration'),
+    seek: $('#seek')
+  };
   let i = 0, on = false;
   audio.volume = 0.35;
-  const paint = () => { icon.className = 'fa-solid ' + (on ? 'fa-pause' : 'fa-play'); $('#play').setAttribute('aria-label', on ? 'Pause' : 'Play'); };
+  const formatTime = seconds => {
+    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+    const n = Math.floor(seconds);
+    return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
+  };
+  const paint = () => {
+    const icon = on ? 'fa-pause' : 'fa-play';
+    const button = $('#player-play');
+    button.querySelector('i').className = 'fa-solid ' + icon;
+    button.setAttribute('aria-label', on ? 'Pause' : 'Play');
+    $('.deck-start-label').textContent = on ? 'pause' : 'play';
+    $('.retro-player').classList.toggle('is-playing', on);
+    controls.status.textContent = on ? 'PLAYING' : 'READY';
+  };
+  const paintTrack = () => {
+    controls.playerTrack.textContent = MUSIC[i].title;
+    controls.playerNumber.textContent = String(i + 1).padStart(2, '0') + '/' + String(MUSIC.length).padStart(2, '0');
+  };
+  const paintProgress = () => {
+    const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+    controls.current.textContent = formatTime(audio.currentTime);
+    controls.duration.textContent = formatTime(duration);
+    controls.seek.value = duration ? String(Math.round(audio.currentTime / duration * 1000)) : '0';
+    $('.retro-player').style.setProperty('--p', duration ? (audio.currentTime / duration).toFixed(4) : '0');
+    $('#tape-counter').textContent = String(Math.min(999, Math.floor(audio.currentTime || 0))).padStart(3, '0');   // drives the tape spools + seek fill
+  };
   const load = (n, go) => {
     i = (n + MUSIC.length) % MUSIC.length;
-    audio.src = MUSIC[i].src; name.textContent = MUSIC[i].title;
+    audio.src = MUSIC[i].src;
+    paintTrack();
+    paintProgress();
+    controls.status.textContent = go ? 'LOADING' : 'READY';
     if (go) play();
   };
-  const play = () => audio.play().then(() => { on = true; paint(); }).catch(() => { on = false; paint(); });
-  $('#play').onclick = () => { if (on) { audio.pause(); on = false; paint(); } else play(); };
-  $('#prev').onclick = () => load(i - 1, on);
-  $('#next').onclick = () => load(i + 1, on);
-  audio.onended = () => load(i + 1, true);
-  audio.onerror = () => { name.textContent = MUSIC[i].title + ' (file not found)'; on = false; paint(); };
+  const play = () => audio.play().catch(() => {
+    on = false;
+    paint();
+    controls.status.textContent = 'PLAYBACK BLOCKED';
+  });
+  const toggle = () => { if (audio.paused) play(); else audio.pause(); };
+  const previous = () => load(i - 1, !audio.paused);
+  const next = () => load(i + 1, !audio.paused);
+  $('#player-play').addEventListener('click', toggle);
+  $('#player-prev').addEventListener('click', previous);
+  $('#player-next').addEventListener('click', next);
+  controls.seek.addEventListener('input', () => {
+    if (Number.isFinite(audio.duration) && audio.duration > 0) audio.currentTime = Number(controls.seek.value) / 1000 * audio.duration;
+  });
+  audio.addEventListener('play', () => { on = true; paint(); });
+  audio.addEventListener('pause', () => { on = false; paint(); });
+  audio.addEventListener('timeupdate', paintProgress);
+  audio.addEventListener('loadedmetadata', paintProgress);
+  audio.addEventListener('durationchange', paintProgress);
+  audio.addEventListener('ended', () => load(i + 1, true));
+  audio.addEventListener('error', () => {
+    on = false;
+    paint();
+    controls.status.textContent = 'FILE UNAVAILABLE';
+    controls.playerTrack.textContent = MUSIC[i].title + ' (file unavailable)';
+  });
   // used by arcade.js: pause() returns true if music was playing; resume() starts it again
-  window.pfMusic = { pause() { const was = on; if (on) { audio.pause(); on = false; paint(); } return was; }, resume() { play(); } };
+  window.pfMusic = {
+    pause() { const was = !audio.paused; if (was) audio.pause(); return was; },
+    resume() { play(); },
+    toggle,
+    previous,
+    next
+  };
   load(0, false);
 })();
 
@@ -144,9 +230,14 @@ document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(
     }
 
     g.draw = () => {
-      ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, w, h);
+      ctx.clearRect(0, 0, w, h);
       const cx = w / 2, cy = h / 2, sg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 140);
-      sg.addColorStop(0, 'rgba(0,0,0,1)'); sg.addColorStop(.5, 'rgba(3,3,4,.85)'); sg.addColorStop(1, 'rgba(5,5,5,0)');
+      if (document.documentElement.dataset.theme === 'light') {   // light theme: soft silver with a hint of blue instead of black
+        sg.addColorStop(0, 'rgba(226,232,242,.95)'); sg.addColorStop(.35, 'rgba(184,196,216,.85)');
+        sg.addColorStop(.7, 'rgba(148,164,192,.4)'); sg.addColorStop(1, 'rgba(130,148,180,0)');
+      } else {
+        sg.addColorStop(0, 'rgba(0,0,0,1)'); sg.addColorStop(.5, 'rgba(3,3,4,.85)'); sg.addColorStop(1, 'rgba(5,5,5,0)');
+      }
       ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(cx, cy, 140, 0, 6.2832); ctx.fill();
 
       const r = cv.getBoundingClientRect(), mx = ptr.x - r.left, my = ptr.y - r.top;
@@ -186,24 +277,48 @@ document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(
    passes (glint + sparks + a glowing cut line left behind it); at the end of the page the blade slides into the sheath,
    and scrolling back up draws it again. ---------- */
 (() => {
-  const KATANA_SRC = 'images/Katana_1.png', SHEATH_SRC = 'images/Sheath_1.png';
+  const SWORDS = {
+    dark: {
+      katana: 'images/Katana_1.png', sheath: 'images/Sheath_1.png',
+      KN: { w: 65, h: 591 }, SN: { w: 79, h: 558 },
+      PIV: { x: 34.5, y: 214 }, GUARD_BOTTOM: 2, MOUTH: { x: 43, y: 3 },
+      FIT: { tilt: -4, cut: .04, bm: 24, sink: 0 }
+    },
+    red: {
+      katana: 'images/katana-red.png', sheath: 'images/sheath-red-v2.png',
+      KN: { w: 111, h: 748 }, SN: { w: 134, h: 495 },
+      PIV: { x: 55, y: 209 }, GUARD_BOTTOM: 33, MOUTH: { x: 67, y: 0 },
+      FIT: { tilt: 0, cut: 0, bm: 24, sink: 0, rs: 1, ref: 737 }
+    },
+    light: {
+      katana: 'images/katana-light.png', sheath: 'images/sheath-light-v2.png',
+      KN: { w: 237, h: 1484 }, SN: { w: 130, h: 482 },
+      PIV: { x: 118, y: 395 }, GUARD_BOTTOM: 117, MOUTH: { x: 65, y: 0 },
+      FIT: { tilt: 0, cut: 0, bm: 24, sink: 0, rs: 2, ref: 737 }
+    }
+  };
+  /* FIT (per sword, tune by eye):
+       tilt - final lean of the hilt when sheathed (deg). Match it to how much the sheath art itself leans.
+       cut  - fraction of the sheath's length trimmed off the bottom (it fades out instead of ending abruptly).
+       bm   - px of air kept between the sheath and the bottom of the screen.
+       sink - how far (in sheath-image px) the guard seats down into the mouth, so the hilt meets the sheath with no gap.
+       rs   - (red + light) the new sheath images are cut from your full sheathed art, so they are drawn at the katana's own scale
+              times rs (red art = 1x the katana image, light art = 2x). That keeps sheath length in proportion to the hilt.
+       ref  - height (in reference-art px) of the whole sheathed sword. The sword is scaled so its sheathed height equals the gold one's. */
+  let swordTheme = document.documentElement.dataset.theme || 'dark';
+  let { KN, SN, PIV, GUARD_BOTTOM, MOUTH, FIT } = SWORDS[swordTheme] || SWORDS.dark;
 
   /* ---- Tuning knobs ---- */
   const GAP     = 100;   // px between nav labels, constant (auto-shrinks on short screens so the last label never hits the sheath/hilt)
   const DRAW_MS = 420;   // how long the quick "draw" takes when you scroll up from the sheathed state
   const REST    = 1;     // gap (px) between the guard and the top of the label text when the katana is planted on it
-  const TILT    = -4;    // final lean of the hilt when sheathed (deg, negative = leans left, like the sheath)
+  const TRAIL_HILT = .3;   // the cut-line ends this fraction of the way up the handle from the guard (0 = at the guard, 1 = top of the handle), so only the path above the sword shows
   const GHOSTS  = 5;     // afterimages that trail behind the katana while it moves
   const KX      = 26;    // px from the left edge of the screen to the centre line of the katana + sheath
   const PEEK_MS = 2600;  // after the intro the nav slides open briefly so visitors discover it
   const KANJI   = { home: '家', about: '己', skills: '技', interests: '趣', arcade: '遊' };   // faint watermark behind each label
 
   /* ---- Image geometry (pixels inside the PNGs) ---- */
-  const KN = { w: 65, h: 591 }, SN = { w: 79, h: 558 };
-  const PIV = { x: 34.5, y: 214 };   // katana: centre of the guard (tsuba). Everything is positioned by this point.
-  const GUARD_BOTTOM = 2;            // katana: guard's lower edge, below PIV
-  const MOUTH = { x: 43, y: 3 };     // sheath: centre of the opening
-
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const rail = $('.rail'), links = $$('.rail a'), secs = links.map(a => document.getElementById(a.dataset.t));
   const N = links.length - 1;        // index of the last label (the sheath phase starts there)
@@ -217,10 +332,13 @@ document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(
   // so a curved blade can never poke out of the side no matter how it is tilted.
   const clip = document.createElement('div'); clip.id = 'katclip'; document.body.appendChild(clip);
   const plaque = document.createElement('div'); plaque.id = 'plaque'; document.body.appendChild(plaque);   // full-height lacquer banner behind the nav + sheath
+  plaque.innerHTML = '<i class="pedge"></i>';   // themed edge ornament (blade teeth for red, ripple scallops for light)
   const trail = document.createElement('div'); trail.id = 'trail'; document.body.appendChild(trail);   // glowing line along the path already cut
-  const sheath = mk(SHEATH_SRC, 'sheath', document.body);
-  const ghosts = Array.from({ length: GHOSTS }, () => { const g = mk(KATANA_SRC, '', clip); g.className = 'ghost'; return g; });
-  const kat = mk(KATANA_SRC, 'katana', clip);   // added last so it paints on top of its afterimages
+  const initialSword = SWORDS[swordTheme] || SWORDS.dark;
+  const sheath = mk(initialSword.sheath, 'sheath', document.body);
+  const shProbe = document.createElement('div'); shProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;visibility:hidden;pointer-events:none;height:var(--sh)'; document.body.appendChild(shProbe);   // reads the resolved --sh in px
+  const ghosts = Array.from({ length: GHOSTS }, () => { const g = mk(initialSword.katana, '', clip); g.className = 'ghost'; return g; });
+  const kat = mk(initialSword.katana, 'katana', clip);   // added last so it paints on top of its afterimages
   sheath.onerror = () => sheath.remove();
   links.forEach((a, i) => a.style.setProperty('--i', i));
 
@@ -242,23 +360,101 @@ document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(
   links.forEach(a => a.addEventListener('click', () => { if (matchMedia('(hover: none)').matches) closeSoon(400); }));
   const peek = () => { if (reduced) return; setOpen(true); closeSoon(PEEK_MS); };
 
-  let max = 1, A = [], cx = 0, Y0 = 0, h = 27, cOff = 14, cTop = 6, sc = .2, tipD = 80, mouthX = 0, mouthY = 0, gap = 70;
+  let seat = 0, max = 1, A = [], cx = 0, Y0 = 0, h = 27, cOff = 14, cTop = 6, sc = .2, tipD = 80, mouthX = 0, mouthY = 0, gap = 70;
   let o = 0, oGoal = 0, sliding = false;   // o: 0 = katana + sheath parked on the far-left strip, 1 = centred in the open plaque
   let m = 0, goal = 0, looping = false, started = false, introDone = false, seated = false, held = false, draw = null;
   const cutOn = links.map(() => false), hist = [];
 
-  /* ---- Effects ---- */
+  /* ---- Effects: gold for dark, evil crimson for red, soft pearl for light ---- */
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const kindOf = () => swordTheme === 'red' ? 'red' : swordTheme === 'light' ? 'light' : 'gold';
+  let curDx = 0, curPx = 0, curTipY = 0, lastEmit = 0;
+  function fx(cls, x, y, vars) {
+    const el = document.createElement('i'); el.className = cls; el.style.left = x + 'px'; el.style.top = y + 'px';
+    if (vars) for (const k in vars) el.style.setProperty(k, vars[k]);
+    document.body.appendChild(el); return el;
+  }
+  const fly = (el, frames, opts) => { el.animate(frames, opts).onfinish = () => el.remove(); };
   function shine() { kat.classList.remove('shine'); void kat.offsetWidth; kat.classList.add('shine'); }
-  function burst(x, y, s = 1, n = 6) {   // gold glint with a diagonal streak, plus a few sparks
-    if (reduced) return;
-    const el = document.createElement('div'); el.className = 'glint'; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.setProperty('--s', s);
-    el.addEventListener('animationend', () => el.remove()); document.body.appendChild(el);
-    for (let i = 0; i < n; i++) {
-      const sp = document.createElement('i'); sp.className = 'spark'; sp.style.left = x + 'px'; sp.style.top = y + 'px'; document.body.appendChild(sp);
-      const dx = (i % 2 ? 1 : -1) * (10 + Math.random() * 34) * s, dy = (Math.random() - .35) * 38 * s;
-      sp.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.15)', opacity: 0 }],
-        { duration: 380 + Math.random() * 320, easing: 'cubic-bezier(.1,.7,.3,1)' }).onfinish = () => sp.remove();
+  kat.addEventListener('animationend', e => { if (e.animationName.indexOf('shine') === 0) kat.classList.remove('shine'); });
+  function pulse() { sheath.classList.remove('pulse'); void sheath.offsetWidth; sheath.classList.add('pulse'); }
+  sheath.addEventListener('animationend', e => { if (e.animationName.indexOf('sheathpulse') === 0) sheath.classList.remove('pulse'); });
+
+  function ring(x, y, kind, s = 1, delay = 0, inward = false) {   // red: hard shockwave. light: soft ripple, like the pearl hitting water
+    const el = fx('fx-ring fx-ring--' + kind, x, y, { '--s': s });
+    const f = inward
+      ? [{ transform: 'scale(3.2)', opacity: 0 }, { transform: 'scale(2.1)', opacity: .9, offset: .3 }, { transform: 'scale(.35)', opacity: 0 }]
+      : [{ transform: 'scale(.2)', opacity: 0 }, { opacity: .9, offset: .2 }, { transform: 'scale(3)', opacity: 0 }];
+    fly(el, f, { duration: kind === 'light' ? 1500 : kind === 'gold' ? 850 : 650, delay, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'backwards' });
+  }
+  function slash(x, y, kind, s = 1, rot) {
+    if (kind === 'red') {   // a jagged crimson cut, then a second cross-cut a beat later
+      [[rnd(-34, -18), 1, 0], [rnd(24, 40), .7, 70]].forEach(([rot, k, delay]) => {
+        const el = fx('fx-slash fx-slash--red', x, y, { '--s': s * k }), t = 'translate(-50%,-50%) rotate(' + rot + 'deg)';
+        fly(el, [{ transform: t + ' scaleX(.1)', opacity: 0 }, { transform: t + ' scaleX(1)', opacity: 1, offset: .22 }, { transform: t + ' scaleX(1.25) scaleY(.2)', opacity: 0 }],
+          { duration: 480, delay, easing: 'cubic-bezier(.1,.9,.2,1)', fill: 'backwards' });
+      });
+    } else if (kind === 'gold') {   // one clean, razor-straight cut with a lens flare, then a faint echo line
+      const r = rot === undefined ? rnd(-30, -20) : rot;
+      [[0, 1, 0], [7, .6, 70]].forEach(([off, k, delay]) => {
+        const el = fx('fx-slash fx-slash--gold', x, y + off, { '--s': s * k }), t = 'translate(-50%,-50%) rotate(' + r + 'deg)';
+        fly(el, [{ transform: t + ' scaleX(.05)', opacity: 0 }, { transform: t + ' scaleX(1)', opacity: 1, offset: .2 }, { transform: t + ' scaleX(1.12)', opacity: 0 }],
+          { duration: 560, delay, easing: 'cubic-bezier(.1,.9,.2,1)', fill: 'backwards' });
+      });
+    } else {                // two silky crescents that float up and dissolve
+      [0, 1].forEach(i => {
+        const el = fx('fx-slash fx-slash--light', x, y, { '--s': s * (1 - i * .35) });
+        fly(el, [{ transform: 'translate(-50%,-50%) rotate(-18deg) scale(.3)', opacity: 0 }, { transform: 'translate(-50%,-62%) rotate(-12deg) scale(1)', opacity: .95, offset: .35 }, { transform: 'translate(-46%,-82%) rotate(-6deg) scale(1.25)', opacity: 0 }],
+          { duration: 1100 + i * 250, delay: i * 110, easing: 'cubic-bezier(.2,.6,.3,1)', fill: 'backwards' });
+      });
     }
+  }
+  function particles(x, y, kind, s, n, upward) {   // red: embers + shards. light: drifting pearl motes
+    for (let i = 0; i < n; i++) {
+      const sp = fx('spark spark--' + kind, x, y, { '--z': (kind === 'red' ? rnd(2, 5) : kind === 'gold' ? rnd(3, 6) : rnd(4, 9)) + 'px' });
+      const dx = (i % 2 ? 1 : -1) * rnd(6, 40) * s;
+      if (kind === 'red') {
+        const rise = upward ? -rnd(18, 74) * s : rnd(8, 34) * s, rot = rnd(-200, 200);
+        fly(sp, [{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: 'translate(' + dx * .6 + 'px,' + rise * .55 + 'px) scale(1.1) rotate(' + rot * .5 + 'deg)', opacity: 1, offset: .35 }, { transform: 'translate(' + dx + 'px,' + rise + 'px) scale(.1) rotate(' + rot + 'deg)', opacity: 0 }],
+          { duration: rnd(520, 1100), easing: 'cubic-bezier(.15,.7,.3,1)' });
+      } else if (kind === 'gold') {   // gold-leaf flecks: thrown out, then tumble down slowly
+        const up = rnd(8, 30) * s, fall = rnd(14, 46) * s, rot = rnd(-260, 260);
+        fly(sp, [{ transform: 'translate(0,0) scale(1) rotate(0)', opacity: 1 }, { transform: 'translate(' + dx * .7 + 'px,' + -up + 'px) scale(1.15) rotate(' + rot * .4 + 'deg)', opacity: 1, offset: .3 },
+          { transform: 'translate(' + dx + 'px,' + fall + 'px) scale(.2) rotate(' + rot + 'deg)', opacity: 0 }], { duration: rnd(650, 1300), easing: 'cubic-bezier(.2,.6,.4,1)' });
+      } else {
+        const dy = -rnd(24, 70) * s, sway = rnd(-14, 14);
+        fly(sp, [{ transform: 'translate(0,0) scale(.4)', opacity: 0 }, { transform: 'translate(' + (dx * .4 + sway) + 'px,' + dy * .4 + 'px) scale(1)', opacity: .95, offset: .3 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.3)', opacity: 0 }],
+          { duration: rnd(900, 1700), easing: 'ease-out' });
+      }
+    }
+  }
+  function burst(x, y, s = 1, n = 6) {   // used whenever a label is cut
+    if (reduced) return;
+    const kind = kindOf(), el = fx('glint glint--' + kind, x, y, { '--s': s });
+    el.addEventListener('animationend', () => el.remove());
+    slash(x, y, kind, s);
+    particles(x, y, kind, s, n + (kind === 'red' ? 4 : 2), true);
+  }
+  function drawFx() {   // unsheathe: the blade leaves the saya
+    shine(); pulse();
+    if (reduced) return;
+    const x = mouthX + curDx, y = mouthY, kind = kindOf();
+    if (kind === 'red') { ring(x, y, 'red', 1.3); ring(x, y, 'red', .8, 120); slash(x, y - 6, 'red', 1.3); particles(x, y, 'red', 1.4, 16, true); }
+    else if (kind === 'light') { ring(x, y, 'light', 1.2); ring(x, y, 'light', 1.6, 260); ring(x, y, 'light', 2, 520); particles(x, y, 'light', 1.3, 10, true); }
+    else { ring(x, y, 'gold', 1.2); ring(x, y, 'gold', .8, 110); slash(x, y - 4, 'gold', 1.4); particles(x, y, 'gold', 1.3, 14, true); }
+  }
+  function sheathFx() {   // sheathe: the blade seats home
+    pulse();
+    if (reduced) return;
+    const x = mouthX + curDx, y = mouthY, kind = kindOf();
+    if (kind === 'red') { ring(x, y, 'red', 1.1, 0, true); ring(x, y, 'red', 1.6, 90, true); ring(x, y, 'red', .9, 260); particles(x, y, 'red', 1, 10, false); }
+    else if (kind === 'light') { ring(x, y, 'light', 1.1, 0, true); ring(x, y, 'light', 1.4, 320); particles(x, y, 'light', 1, 8, true); }
+    else { slash(x, y, 'gold', 1.1, 0); ring(x, y, 'gold', 1, 0, true); ring(x, y, 'gold', 1.4, 200); particles(x, y, 'gold', 1, 9, false); }   // a flat flash across the mouth = the "chin" of the blade seating
+  }
+  function shed(now) {   // while the blade moves it sheds embers (red) or pearl motes (light) from the tip
+    if (reduced || !introDone || now - lastEmit < 140) return;
+    lastEmit = now;
+    particles(curPx, Math.min(curTipY, mouthY), kindOf(), .55, 1, true);
   }
   function track(px, py, t) {   // afterimages: older poses, visible only in proportion to how far the katana has moved since
     hist.push({ x: px, y: py, t }); if (hist.length > GHOSTS * 2 + 4) hist.shift();
@@ -281,15 +477,29 @@ document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(
     cx = rr.left + rr.width / 2; Y0 = rr.top; h = links[0].offsetHeight;
     const ar = links[0].getBoundingClientRect(), lr = links[0].firstChild.getBoundingClientRect();
     cTop = lr.top - ar.top; cOff = cTop + lr.height / 2;                  // top and centre of the label text inside its link box
+    // Size: red + light are scaled so the sheathed sword is exactly as tall as the gold one (hilt + sheath), whatever the screen height.
+    if (FIT.ref) {
+      const G = SWORDS.dark, shPx = shProbe.offsetHeight;
+      const goldTotal = shPx * (1.06 * (G.PIV.y + G.GUARD_BOTTOM) / G.KN.h + (1 - G.FIT.cut));
+      const kh = KN.h * (goldTotal / FIT.ref) / FIT.rs + 'px';
+      kat.style.height = kh; ghosts.forEach(g => { g.style.height = kh; });
+    } else { kat.style.height = ''; ghosts.forEach(g => { g.style.height = ''; }); }
     sc = kat.offsetHeight / KN.h; tipD = (KN.h - PIV.y) * sc;
     const org = PIV.x * sc + 'px ' + PIV.y * sc + 'px'; kat.style.transformOrigin = org; ghosts.forEach(g => { g.style.transformOrigin = org; });
+    sheath.style.height = FIT.rs ? (SN.h * FIT.rs * sc) + 'px' : '';         // proportional to the katana, not to --sh
     const ssc = sheath.offsetHeight / SN.h;
-    sheath.style.left = (KX - sheath.offsetWidth / 2) + 'px';              // sheath parked on the far-left katana strip (it slides right when the nav opens)
-    const sr = { left: KX - sheath.offsetWidth / 2, top: vh - 14 - sheath.offsetHeight };   // laid out, not measured: unaffected by the slide transform
+    const sLeft = FIT.rs ? KX - MOUTH.x * ssc : KX - sheath.offsetWidth / 2;   // red/light: the mouth sits on the blade lane
+    sheath.style.left = sLeft + 'px';              // sheath parked on the far-left katana strip (it slides right when the nav opens)
+    const vis = sheath.offsetHeight * (1 - FIT.cut);                          // visible length: the bottom FIT.cut of the sheath is trimmed and faded away
+    const sr = { left: sLeft, top: vh - FIT.bm - vis };   // laid out, not measured: unaffected by the slide transform
+    sheath.style.top = sr.top + 'px'; sheath.style.bottom = 'auto';
+    const edge = (1 - FIT.cut) * 100;
+    sheath.style.webkitMaskImage = sheath.style.maskImage = FIT.cut ? 'linear-gradient(to bottom,#000 0,#000 ' + (edge - 12) + '%,transparent ' + edge + '%)' : '';
     mouthX = sr.left + MOUTH.x * ssc; mouthY = sr.top + MOUTH.y * ssc;
-    clip.style.height = Math.max(0, mouthY) + 'px';
+    seat = FIT.sink * ssc;                                                  // guard seats this many px below the mouth line
+    clip.style.height = Math.max(0, mouthY + seat) + 'px';
     // largest gap that still keeps the last label clear of the hilt that stands out of the sheath
-    const hilt = PIV.y * sc;
+    const hilt = (PIV.y + GUARD_BOTTOM) * sc;
     const room = (sr.top - hilt - 16 - h - Y0) / N - h;
     gap = Math.max(6, Math.min(GAP, room)); rail.style.gap = gap + 'px';
     max = document.documentElement.scrollHeight - vh;
@@ -310,18 +520,21 @@ document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(
   }
   function startDraw() {
     seated = false; held = true; draw = { t0: performance.now(), from: m };
-    shine(); burst(mouthX, mouthY, 1.2, 8);
+    drawFx();
   }
   function render() {
     const k = Math.min(m, N), sf = Math.max(m - N, 0), e = sf * sf * (3 - 2 * sf), g = gap;
     const dx = (cx - KX) * o, x0 = KX + dx + 5 * sc;                  // far-left strip when closed, through the middle of the label text when open
     sheath.style.transform = 'translateX(' + dx + 'px)';
     const y0 = Y0 + k * (h + g) + cTop - REST - GUARD_BOTTOM * sc;    // guard resting on top of label k, blade running down through it
-    const x1 = mouthX + dx, y1 = mouthY - GUARD_BOTTOM * sc;               // sheathed: guard rests on the mouth
+    const x1 = mouthX + dx, y1 = mouthY + seat - GUARD_BOTTOM * sc;               // sheathed: guard rests on the mouth
     const px = x0 + (x1 - x0) * e, py = y0 + (y1 - y0) * e;
-    pose(px, py, TILT * e);
+    const te = Math.min(1, sf * 2.4), tilt = FIT.tilt * te * te * (3 - 2 * te);   // lean in early so the blade enters the sheath already lined up
+    pose(px, py, tilt);
     const tipY = py + tipD;
-    const top = Y0 + cOff - 8, hh = Math.min(tipY, mouthY) - top;     // glowing line from the first label down to the tip
+    curDx = dx; curPx = px; curTipY = tipY;
+    kat.style.setProperty('--g', (1 - e).toFixed(3));   // glow fades out as the blade sheathes so the clip line never shows a tinted band
+    const top = Y0 + cOff - 8, hh = Math.min(py - PIV.y * sc * TRAIL_HILT, mouthY + seat) - top;     // glowing line from the first label down to the tip
     trail.style.left = (KX + dx) + 'px'; trail.style.top = top + 'px'; trail.style.height = Math.max(0, hh) + 'px';
     trail.style.opacity = introDone && hh > 6 ? (1 - e) : 0;
     if (!introDone) return;
@@ -346,23 +559,170 @@ document.addEventListener('pointerdown', e => { if (dock.open && !dock.contains(
     if (draw) {                                                       // time-based quick draw, ignores scroll speed
       const t = Math.min(1, (now - draw.t0) / DRAW_MS), e = 1 - Math.pow(1 - t, 3);
       m = draw.from + (N - draw.from) * e; if (t >= 1) draw = null;
-      render(); requestAnimationFrame(frame); return;
+      render(); shed(now); requestAnimationFrame(frame); return;
     }
     m += (goal - m) * (reduced ? 1 : .2); if (Math.abs(goal - m) < .002) m = goal;
-    seated = m >= N + .98;
-    render(); if (m !== goal) requestAnimationFrame(frame); else { looping = false; settle(); }
+    const was = seated; seated = m >= N + .98;
+    render(); if (m !== goal) shed(now); if (seated && !was && introDone) sheathFx();
+    if (m !== goal) requestAnimationFrame(frame); else { looping = false; settle(); }
   }
   links.forEach(a => a.addEventListener('click', shine));   // clicking a label makes the blade flash as it heads there
   addEventListener('scroll', aim, { passive: true });
   addEventListener('resize', measure);
   new ResizeObserver(measure).observe(document.body);
 
-  Promise.all([kat.decode(), sheath.decode()]).catch(() => {}).then(() => {
-    measure(); m = goal;
-    pose(KX + 5 * sc, -(KN.h * sc) - 40, 0); settle();   // intro: katana drops in from above
-    setTimeout(() => {
-      started = true; kat.style.transition = reduced ? 'none' : 'transform 1s cubic-bezier(.2,.8,.2,1)';
-      render(); setTimeout(() => { kat.style.transition = 'none'; introDone = true; peek(); render(); settle(); if (oGoal !== o) slide(); }, 1050);
-    }, 1400);
+  let assetRevision = 0, introScheduled = false;
+  const assetPreloads = new Map();
+  function preloadSwordAsset(src) {
+    if (!assetPreloads.has(src)) {
+      const image = new Image();
+      image.src = src;
+      assetPreloads.set(src, image.decode());
+    }
+    return assetPreloads.get(src);
+  }
+  function applySwordTheme(theme, force) {
+    const nextTheme = SWORDS[theme] ? theme : 'dark';
+    if (nextTheme === swordTheme && !force) { assetRevision++; return; }
+    const revision = ++assetRevision, set = SWORDS[nextTheme];
+    Promise.all([preloadSwordAsset(set.katana), preloadSwordAsset(set.sheath)]).then(() => {
+      if (revision !== assetRevision) return;
+      swordTheme = nextTheme;
+      ({ KN, SN, PIV, GUARD_BOTTOM, MOUTH, FIT } = set);
+      kat.style.opacity = sheath.style.opacity = '0';
+      sheath.src = set.sheath;
+      kat.src = set.katana;
+      ghosts.forEach(g => { g.src = set.katana; });
+      return Promise.all([kat.decode(), sheath.decode()]);
+    }).then(() => {
+      if (revision !== assetRevision) return;
+      kat.style.opacity = sheath.style.opacity = '1';
+      measure();
+      if (introScheduled) { render(); return; }
+      introScheduled = true;
+      m = goal;
+      pose(KX + 5 * sc, -(KN.h * sc) - 40, 0);
+      settle();
+      setTimeout(() => {
+        started = true;
+        kat.style.transition = reduced ? 'none' : 'transform 1s cubic-bezier(.2,.8,.2,1)';
+        render();
+        setTimeout(() => {
+          kat.style.transition = 'none'; introDone = true; peek(); render(); settle();
+          if (oGoal !== o) slide();
+        }, 1050);
+      }, 1400);
+    }).catch(error => {
+      if (revision === assetRevision) console.error('[katana] Could not load the ' + nextTheme + ' sword assets.', error);
+    });
+  }
+  window.addEventListener('portfolio-theme-change', e => applySwordTheme(e.detail.theme, false));
+  applySwordTheme(swordTheme, true);
+})();
+
+/* ---------- Draggable profile card ---------- */
+(() => {
+  const card = $('.profile-card'), handle = $('.profile-drag-handle');
+  if (!card || !handle) return;
+  let x = 0, y = 0, pointerId = null, startX = 0, startY = 0, originX = 0, originY = 0;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const paint = () => {
+    card.style.setProperty('--drag-x', x + 'px');
+    card.style.setProperty('--drag-y', y + 'px');
+  };
+  function constrain() {
+    paint();
+    const parent = card.parentElement.getBoundingClientRect();
+    const rect = card.getBoundingClientRect();
+    const left = rect.left - x, top = rect.top - y;
+    x = clamp(x, parent.left - left, Math.max(parent.left - left, parent.right - left - rect.width));
+    y = clamp(y, parent.top - top, Math.max(parent.top - top, parent.bottom - top - rect.height));
+    paint();
+  }
+  handle.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || pointerId !== null) return;
+    e.preventDefault();
+    pointerId = e.pointerId;
+    startX = e.clientX; startY = e.clientY; originX = x; originY = y;
+    card.classList.add('is-dragging');
+    handle.setPointerCapture(pointerId);
+  });
+  handle.addEventListener('pointermove', e => {
+    if (e.pointerId !== pointerId) return;
+    x = originX + e.clientX - startX;
+    y = originY + e.clientY - startY;
+    constrain();
+  });
+  function endDrag(e) {
+    if (e.pointerId !== pointerId) return;
+    pointerId = null;
+    card.classList.remove('is-dragging');
+  }
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+  handle.addEventListener('lostpointercapture', endDrag);
+  handle.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 32 : 12;
+    if (e.key === 'ArrowLeft') x -= step;
+    else if (e.key === 'ArrowRight') x += step;
+    else if (e.key === 'ArrowUp') y -= step;
+    else if (e.key === 'ArrowDown') y += step;
+    else if (e.key === 'Home') { x = 0; y = 0; }
+    else return;
+    e.preventDefault();
+    constrain();
+  });
+  addEventListener('resize', constrain, { passive: true });
+})();
+
+/* ---------- Draggable tape player (drag anywhere that is not a button; arrow keys when the title is focused; double-click the title to reset) ---------- */
+(() => {
+  const deck = $('.retro-player'), grip = $('#deck-grip');
+  if (!deck || !grip) return;
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+  const place = (x, y) => {
+    const r = deck.getBoundingClientRect();
+    x = clamp(x, 6, innerWidth - r.width - 6);
+    y = clamp(y, 6, innerHeight - r.height - 6);
+    deck.style.left = x + 'px'; deck.style.top = y + 'px';
+    deck.style.right = 'auto'; deck.style.bottom = 'auto';
+    return { x, y };
+  };
+  const saved = store.get('deck-pos', null);
+  if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) place(saved.x, saved.y);
+
+  let drag = null;
+  deck.addEventListener('pointerdown', e => {
+    if (e.button > 0 || e.target.closest('button, input, a')) return;
+    const r = deck.getBoundingClientRect();
+    drag = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top };
+    deck.setPointerCapture(e.pointerId);
+    deck.classList.add('is-dragging');
+    e.preventDefault();
+  });
+  deck.addEventListener('pointermove', e => {
+    if (drag && e.pointerId === drag.id) place(e.clientX - drag.dx, e.clientY - drag.dy);
+  });
+  const end = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    drag = null; deck.classList.remove('is-dragging');
+    const r = deck.getBoundingClientRect(); store.set('deck-pos', { x: r.left, y: r.top });
+  };
+  deck.addEventListener('pointerup', end);
+  deck.addEventListener('pointercancel', end);
+
+  grip.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 48 : 12, k = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+    if (!k) return;
+    e.preventDefault();
+    const r = deck.getBoundingClientRect(), p = place(r.left + k[0], r.top + k[1]);
+    store.set('deck-pos', p);
+  });
+  grip.addEventListener('dblclick', () => {
+    deck.style.left = deck.style.top = deck.style.right = deck.style.bottom = '';
+    store.set('deck-pos', null);
+  });
+  addEventListener('resize', () => {
+    if (deck.style.left) { const r = deck.getBoundingClientRect(); place(r.left, r.top); }
   });
 })();

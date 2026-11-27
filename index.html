@@ -3,14 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0909" id="theme-color">
 <title>Luigi A. Lising — BSIT Student & Web Developer</title>
+<script>
+  try {
+    var savedTheme = JSON.parse(localStorage.getItem('pf:theme') || '"dark"');
+    document.documentElement.dataset.theme = savedTheme === 'green' ? 'red' :
+      (['dark', 'red', 'light'].includes(savedTheme) ? savedTheme : 'dark');
+  } catch (e) {
+    document.documentElement.dataset.theme = 'dark';
+  }
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css">
 <link href="https://fonts.cdnfonts.com/css/ghost-stories-deluxe" rel="stylesheet">
 <link href="https://fonts.cdnfonts.com/css/poppins" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&family=VT323&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="arcade.css">
 <link rel="stylesheet" href="interests.css">
+<link rel="stylesheet" href="pearl.css">
 </head>
 <body class="loading">
 
@@ -18,34 +29,89 @@
 <div id="progress"></div>
 <canvas id="fx" aria-hidden="true"></canvas>
 
-<details class="dock">
-  <summary><i class="fa-solid fa-sliders"></i> Controls</summary>
-  <div class="dock-panel">
-    <div class="themes" role="group" aria-label="Theme">
-      <button data-theme="dark" aria-pressed="true">Dark</button>
-      <button data-theme="green" aria-pressed="false">Green</button>
-      <button data-theme="light" aria-pressed="false">Light</button>
-    </div>
-    <div class="player">
-      <button id="prev" aria-label="Previous track"><i class="fa-solid fa-backward-step"></i></button>
-      <button id="play" aria-label="Play"><i class="fa-solid fa-play"></i></button>
-      <button id="next" aria-label="Next track"><i class="fa-solid fa-forward-step"></i></button>
-      <span id="track">Select a track</span>
-    </div>
-    <audio id="audio" preload="none"></audio>
+
+
+<aside class="retro-player" aria-label="Portfolio tape player and theme switch">
+  <audio id="audio" preload="none"></audio>
+  <div class="deck-title">
+    <span class="deck-grip" id="deck-grip" tabindex="0" role="button" aria-label="Move the music player: drag it, or focus and use the arrow keys">portfolioTape</span>
+    <small>luigi lising</small>
   </div>
-</details>
+  <div class="deck-top">
+    <svg class="deck-path" viewBox="0 0 300 120" aria-hidden="true">
+      <path d="M50 70 L77 93 M83 97 L112 91 M250 70 L223 93 M217 97 L188 91"/>
+      <circle cx="80" cy="98" r="5"/><circle cx="220" cy="98" r="5"/>
+      <rect x="110" y="84" width="80" height="20" rx="4"/>
+      <rect class="stripe" x="116" y="89" width="68" height="3"/>
+      <rect x="122" y="104" width="8" height="4"/><rect x="146" y="104" width="8" height="4"/><rect x="170" y="104" width="8" height="4"/>
+    </svg>
+    <div class="reel reel--l" aria-hidden="true"><div class="reel-spin"><i class="pack"></i><i class="hub"></i></div></div>
+    <div class="reel reel--r" aria-hidden="true"><div class="reel-spin"><i class="pack"></i><i class="hub"></i></div></div>
+    <div class="lcd">
+      <div class="lcd-top"><span id="player-track-number">01/03</span><span id="player-status" aria-live="polite">READY</span></div>
+      <div class="lcd-mid"><span class="lcd-big"><span id="player-current-time">0:00</span></span><span class="lcd-dur">/<span id="player-duration">0:00</span></span></div>
+      <strong id="player-track">Glass Shards</strong>
+    </div>
+    <span class="deck-counter" id="tape-counter" aria-hidden="true">000</span>
+    <input id="seek" class="tape-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek through track">
+    <span class="deck-led" aria-hidden="true"><i></i>play</span>
+  </div>
+  <div class="deck-bottom">
+    <div class="retro-controls" role="group" aria-label="Playback controls">
+      <button id="player-prev" class="deck-mini" type="button" aria-label="Previous track"><i class="fa-solid fa-backward-step"></i></button>
+      <button id="player-play" class="retro-play" type="button" aria-label="Play"><i class="fa-solid fa-play"></i><span class="deck-start-label">play</span></button>
+      <button id="player-next" class="deck-mini" type="button" aria-label="Next track"><i class="fa-solid fa-forward-step"></i></button>
+    </div>
+    <div class="deck-themebox">
+      <span class="deck-label">theme</span>
+      <div class="themes" role="group" aria-label="Color theme">
+        <button data-theme="dark" type="button" aria-pressed="true" aria-label="Dark theme" title="Dark"></button>
+        <button data-theme="red" type="button" aria-pressed="false" aria-label="Red theme" title="Red"></button>
+        <button data-theme="light" type="button" aria-pressed="false" aria-label="Light theme" title="Light"></button>
+      </div>
+    </div>
+  </div>
+</aside>
 
 <section class="sec" id="home">
   <div id="home-bg" aria-hidden="true"></div>
-  <div class="hero-text">
-    <h1>Luigi A. Lising</h1>
-    <p class="roles">BSIT student building websites, games and creative projects</p>
-    <p class="quote">“A little curiosity can turn into something you never imagined building.”</p>
-    <div class="social">
-      <a href="https://www.facebook.com/luigi.lising.2025" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i>Facebook</a>
-      <a href="https://mail.google.com/mail/?view=cm&fs=1&to=lisingluigi221@gmail.com" target="_blank" rel="noopener"><i class="fa-solid fa-envelope"></i>Gmail</a>
-      <a href="https://discord.com/users/1311652776580874260" target="_blank" rel="noopener"><i class="fa-brands fa-discord"></i>Discord</a>
+  <div id="crimson-bg" aria-hidden="true"><canvas id="crimson-bg-canvas"></canvas></div>
+  <div id="pearl-bg" class="scene" aria-hidden="true">
+    <div class="light-beam"></div><div class="ambient-light"></div><div class="water-surface"></div>
+    <div class="water">
+      <span class="wave" style="--i:1"></span><span class="wave" style="--i:2"></span>
+      <span class="wave" style="--i:3"></span><span class="wave" style="--i:4"></span>
+      <span class="wave" style="--i:5"></span><span class="wave" style="--i:6"></span>
+      <span class="wave" style="--i:7"></span><span class="wave" style="--i:8"></span>
+    </div>
+    <div class="crater"></div><div class="ground-shadow"></div><div class="reflection"></div>
+    <div class="orb-wrap"><div class="orb">
+      <div class="orb-iridescence"></div><div class="orb-bounce"></div><div class="orb-shimmer"></div>
+      <div class="orb-highlight"></div><div class="orb-spec"></div>
+    </div></div>
+    <div class="grain"></div>
+  </div>
+  <div class="hero-layout">
+    <div class="hero-text">
+      <h1>Luigi A. Lising</h1>
+      <p class="roles">BSIT student building websites, games and creative projects</p>
+      <p class="quote">“A little curiosity can turn into something you never imagined building.”</p>
+      <div class="social">
+        <a href="https://www.facebook.com/luigi.lising.2025" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i>Facebook</a>
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=lisingluigi221@gmail.com" target="_blank" rel="noopener"><i class="fa-solid fa-envelope"></i>Gmail</a>
+        <a href="https://discord.com/users/1311652776580874260" target="_blank" rel="noopener"><i class="fa-brands fa-discord"></i>Discord</a>
+      </div>
+    </div>
+    <div class="profile-slot">
+      <aside class="profile-card dc" aria-label="Discord profile">
+        <a class="dc-link" id="discord-link" href="https://discord.com/users/1311652776580874260" target="_blank" rel="noopener" aria-label="Discord: .loedrfter">
+          <div class="dc-avatar" id="discord-avatar"><span aria-hidden="true">LL</span><img alt="" hidden><i class="dc-dot" data-status="offline"></i></div>
+          <div class="dc-info">
+            <div class="dc-top"><strong id="dc-name">.loedrfter</strong><span class="dc-tag" id="dc-tag" hidden><img alt=""><b></b></span></div>
+            <span class="dc-sub" id="dc-sub">Offline</span>
+          </div>
+        </a>
+      </aside>
     </div>
   </div>
 </section>
@@ -232,10 +298,10 @@
   <a href="#home" data-t="home">Home</a><a href="#about" data-t="about">About</a><a href="#skills" data-t="skills">Skills</a><a href="#interests" data-t="interests">Interests</a><a href="#arcade" data-t="arcade">Arcade</a>
 </nav>
 
-<script src="hero-bg.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="arcade-bg.js"></script>
 <script src="script.js"></script>
+<script src="discord-presence.js"></script>
 <script src="interests.js"></script>
 <script src="arcade.js"></script>
 

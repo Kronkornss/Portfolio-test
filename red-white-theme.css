@@ -1,0 +1,6 @@
+/* Red theme hero -> white & red. Paste at the END of style.css */
+#crimson-bg{background:#faf5f4}
+:root[data-theme="red"] #home{--tx:#2a0a10;--mut:#6a444a;color:var(--tx)}
+:root[data-theme="red"] #home::after{background:linear-gradient(90deg,rgba(250,245,244,.78),rgba(250,245,244,.25) 58%,transparent 90%)}
+:root[data-theme="red"] h1{text-shadow:0 2px 18px rgba(255,255,255,.7);color:#9c1426}
+:root[data-theme="red"] .hero-text::before{background:radial-gradient(rgba(200,30,45,.08),transparent 65%)}
