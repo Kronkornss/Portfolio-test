@@ -255,12 +255,21 @@ body.nav-open .rail a{translate:0 0;transition-delay:0s,0s,calc(var(--i,0) * 55m
   position:fixed;right:44px;bottom:18px;z-index:215;width:320px;box-sizing:border-box;padding:8px;border:3px solid var(--ink);border-radius:14px;background:var(--paper);
   box-shadow:0 16px 40px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.35);color:var(--ink);font-family:'Silkscreen',var(--mono);touch-action:none;user-select:none;-webkit-user-select:none}
 .retro-player *{box-sizing:border-box}
+/* Scales as one piece: --k is set from script.js (phones shrink to fit, tablets grow a little). Anchored bottom-right until it is dragged. */
+.retro-player{transform:scale(var(--k,1));transform-origin:100% 100%}
+.retro-player.is-placed{transform-origin:0 0}
+.retro-player.is-pop{animation:deck-pop .22s ease-out}
+@keyframes deck-pop{from{opacity:0;transform:scale(calc(var(--k,1) * .9))}}
 .retro-player.is-dragging{box-shadow:0 26px 60px rgba(0,0,0,.55),inset 0 0 0 2px rgba(255,255,255,.35)}
-.deck-title{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 7px}
+.deck-title{display:flex;align-items:center;gap:8px;padding:0 4px 7px}
 .deck-grip{display:inline-flex;align-items:center;gap:7px;font:700 16px/1 var(--grot);letter-spacing:-.02em;color:var(--ink);cursor:grab;outline-offset:3px}
 .deck-grip::before{content:"";width:10px;height:15px;background:radial-gradient(circle,var(--ink) 1.3px,transparent 1.6px) 0 0/5px 5px;opacity:.7}
 .retro-player.is-dragging .deck-grip{cursor:grabbing}
-.deck-title small{font:400 8px/1 'Silkscreen',var(--mono);letter-spacing:.06em;opacity:.75}
+.deck-title small{margin-left:auto;font:400 8px/1 'Silkscreen',var(--mono);letter-spacing:.06em;opacity:.75}
+.deck-min{position:relative;flex:none;display:grid;place-items:center;width:20px;height:20px;padding:0;border:2px solid var(--ink);border-radius:5px;background:var(--paper2);color:var(--ink);font-size:9px;cursor:pointer;box-shadow:0 2px 0 rgba(58,48,39,.35);transition:transform .08s,box-shadow .08s,filter .2s}
+.deck-min::after{content:"";position:absolute;inset:-8px}   /* roomy touch target */
+.deck-min:hover{filter:brightness(1.07)}
+.deck-min:active{transform:translateY(2px);box-shadow:none}
 .deck-top{position:relative;height:124px;border:2px solid var(--ink);border-radius:10px;background:var(--paper2)}
 .deck-path{position:absolute;left:0;top:0;width:100%;height:120px;pointer-events:none}
 .deck-path path{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round}
@@ -289,7 +298,7 @@ body.nav-open .rail a{translate:0 0;transition-delay:0s,0s,calc(var(--i,0) * 55m
 .deck-led{position:absolute;right:6px;top:104px;display:flex;align-items:center;gap:4px;font:400 8px/1 'Silkscreen',var(--mono)}
 .deck-led i{width:7px;height:7px;border:1.5px solid var(--ink);background:var(--paper)}
 .retro-player.is-playing .deck-led i{background:var(--orange);box-shadow:0 0 6px var(--orange)}
-.tape-seek{-webkit-appearance:none;appearance:none;position:absolute;left:50px;top:105px;width:200px;height:14px;margin:0;background:transparent;cursor:pointer}
+.tape-seek{-webkit-appearance:none;appearance:none;position:absolute;left:50px;top:103px;width:200px;height:18px;margin:0;background:transparent;cursor:pointer}
 .tape-seek::-webkit-slider-runnable-track{height:4px;border:1.5px solid var(--ink);border-radius:3px;background:linear-gradient(var(--orange),var(--orange)) 0 0/calc(var(--p) * 100%) 100% no-repeat,#d9ccA4}
 .tape-seek::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:11px;margin-top:-5px;border:2px solid var(--ink);border-radius:2px;background:var(--orange)}
 .tape-seek::-moz-range-track{height:4px;border:1.5px solid var(--ink);border-radius:3px;background:#d9cca4}
@@ -311,9 +320,38 @@ body.nav-open .rail a{translate:0 0;transition-delay:0s,0s,calc(var(--i,0) * 55m
 .themes button[data-theme="red"]{background:linear-gradient(135deg,#a83240 55%,#10090b 55%)}
 .themes button[data-theme="light"]{background:linear-gradient(135deg,#f4efe3 55%,#c9bfd0 55%)}
 .themes button:hover{transform:scale(1.12)}
+.deck-mini,.themes button{position:relative}
+.deck-mini::after{content:"";position:absolute;inset:-7px}
+.themes button::after{content:"";position:absolute;inset:-6px -4px}
 .themes button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--paper2),0 0 0 4px var(--orange)}
-@media(max-width:340px){.retro-player{zoom:.88;right:10px}}
-@media(prefers-reduced-motion:reduce){.reel-spin{animation:none}}
+@media(max-width:700px){.retro-player{right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}}
+
+/* ===== Minimized: a small cassette, no buttons. Reels turn while music plays; tap/click it to open the deck. ===== */
+.mini-tape{display:none;position:relative;width:104px;height:68px;border:3px solid var(--ink);border-radius:9px;background:var(--paper);cursor:pointer;
+  box-shadow:0 10px 24px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.35);transition:translate .15s,box-shadow .15s;outline-offset:4px}
+.mini-tape:hover{translate:0 -2px}
+.mini-tape::before,.mini-tape::after{content:"";position:absolute;left:3px;width:3px;height:3px;border-radius:50%;background:var(--ink);box-shadow:87px 0 0 var(--ink);opacity:.75}
+.mini-tape::before{top:3px}.mini-tape::after{bottom:3px}
+.mt-label{position:absolute;left:11px;right:11px;top:5px;height:16px;border:2px solid var(--ink);border-radius:3px;background:var(--paper2)}
+.mt-label::after{content:"";position:absolute;left:4px;right:4px;top:4px;height:3px;border-radius:1px;background:var(--orange)}
+.retro-player.is-playing .mt-label::after{box-shadow:0 0 6px var(--orange)}
+.mt-window{position:absolute;left:14px;right:14px;top:25px;height:28px;border:2px solid var(--ink);border-radius:14px;background:var(--teal);box-shadow:inset 0 2px 5px rgba(0,0,0,.45)}
+.mt-reel{position:absolute;top:2px;width:20px;height:20px;border:2px solid var(--ink);border-radius:50%;background:var(--paper2)}
+.mt-reel--l{left:3px}.mt-reel--r{right:3px}
+.mt-spin{position:absolute;inset:0;animation:reel-spin 2s linear infinite;animation-play-state:paused}
+.retro-player.is-playing .mt-spin{animation-play-state:running}
+.mt-pack,.mt-hub{position:absolute;left:50%;top:50%;translate:-50% -50%;border-radius:50%}
+.mt-pack{aspect-ratio:1}
+.mt-reel--l .mt-pack{width:calc(16px - var(--p) * 8px);background:#5b3b2d;box-shadow:inset 0 0 0 1.5px #36190f}
+.mt-reel--r .mt-pack{width:calc(8px + var(--p) * 8px);background:#cdbd8f;box-shadow:inset 0 0 0 1.5px #a9986a}
+.mt-hub{width:10px;height:10px;border:1.5px solid var(--ink);background:radial-gradient(circle,var(--orange) 0 1.2px,transparent 1.8px),repeating-conic-gradient(var(--paper2) 0 50deg,#b8a87c 50deg 120deg)}
+.mt-foot{position:absolute;left:20px;right:20px;bottom:0;height:11px;border:2px solid var(--ink);border-bottom:0;border-radius:4px 4px 0 0;background:var(--paper2)}
+.mt-foot::before{content:"";position:absolute;left:7px;top:2px;width:3px;height:3px;border-radius:50%;background:var(--ink);box-shadow:37px 0 0 var(--ink)}
+.retro-player.is-mini{width:max-content;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+.retro-player.is-mini .deck-title,.retro-player.is-mini .deck-top,.retro-player.is-mini .deck-bottom{display:none}
+.retro-player.is-mini .mini-tape{display:block}
+.retro-player.is-mini.is-dragging .mini-tape{box-shadow:0 18px 38px rgba(0,0,0,.55),inset 0 0 0 2px rgba(255,255,255,.35);cursor:grabbing}
+@media(prefers-reduced-motion:reduce){.reel-spin,.mt-spin{animation:none}}
 /* Hero text sits low on the left (bottom-aligned), like the reference screenshot */
 @media(min-width:621px){#home{align-items:end;padding-bottom:115px}.hero-layout{align-items:end}.hero-text{transform:none}}
 /* Anchor the hero to the left edge (text starts 127px in, just right of the sword) instead of centring it */
