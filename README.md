@@ -23,9 +23,19 @@ python -m http.server 8000
 
 Open `http://localhost:8000`. This example requires Python; any static file server can be used instead. An internet connection is needed for the externally hosted fonts, Font Awesome, Three.js, and Discord presence service.
 
-## Publish with GitHub Pages
+## Deploy with Vercel
 
-This repository currently has no deployment workflow. To publish without changing the site architecture, open **Settings → Pages**, choose **Deploy from a branch**, select the branch containing the site and the **/(root)** folder, then save. The entry point is `index.html` at the repository root.
+The arcade leaderboard uses the Vercel function at `/api/leaderboard` and a Neon Postgres database:
+
+1. Run [`database/leaderboard.sql`](database/leaderboard.sql) against the Neon database.
+2. In Vercel project settings, add `DATABASE_URL` with that database's connection string for each environment you deploy.
+3. Redeploy after setting the environment variable.
+
+The arcade reports the leaderboard as unavailable if the function or database cannot be reached. Player preferences, sound settings, and personal-best displays remain in the browser; shared leaderboard scores are stored online.
+
+## Publish a static copy with GitHub Pages
+
+Open **Settings → Pages**, choose **Deploy from a branch**, select the branch containing the site and the **/(root)** folder, then save. The entry point is `index.html` at the repository root. GitHub Pages does not run the leaderboard API, so use Vercel for online leaderboard support.
 
 ## Before making the repository public
 

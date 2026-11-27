@@ -10,15 +10,30 @@
     set(k, v) { try { localStorage.setItem('pf:' + k, JSON.stringify(v)); } catch (e) {} }
   };
 
-  /* =====================================================================
-     DATA ACCESS: the ONLY place scores are read or written.
-     To add a database later, change just these two functions (keep them async).
-       getScores(game)                 -> [{ name, score }], best first
-       submitScore(game, name, score)  -> { ok: boolean }
-     game is 'snake' | 'coin' | 'memory'. Memory is "fewest moves", so lower is better.
-     ===================================================================== */
-  async function getScores(game) { return []; }
-  async function submitScore(game, name, score) { return { ok: false }; }
+  /* Scores use the same-origin Vercel function backed by Neon Postgres.
+     Memory is "fewest moves", so lower is better. */
+  async function getScores(game) {
+    const response = await fetch('/api/leaderboard?game=' + encodeURIComponent(game), {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store'
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Leaderboard request failed');
+    if (!result || !Array.isArray(result.scores)) throw new Error('Invalid leaderboard response');
+    return result.scores;
+  }
+  async function submitScore(game, name, score) {
+    const response = await fetch('/api/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ game, name, score })
+    });
+    const result = await response.json();
+    if (!response.ok || !result || result.ok !== true) {
+      throw new Error((result && result.error) || 'Score submission failed');
+    }
+    return result;
+  }
 
   const CFG = {
     coin: { heads: 'resources/heads.svg', tails: 'resources/tails.svg' },
@@ -89,8 +104,8 @@
         '<button class="ao-close" id="ao-close" type="button" aria-label="Close arcade"><i class="fa-solid fa-xmark"></i><span class="t">Close (Esc)</span></button></header>' +
       '<div class="ao-grid">' +
         '<aside class="ao-left ao-col">' +
-          '<section class="ao-card"><div class="ao-card-h"><div><h2><i class="fa-solid fa-medal"></i>Leaderboard</h2><p id="ao-board-sub"></p></div><span class="ao-tag">Offline</span></div>' +
-            '<ol class="ao-rows" id="ao-rows"></ol>' +
+          '<section class="ao-card"><div class="ao-card-h"><div><h2><i class="fa-solid fa-medal"></i>Leaderboard</h2><p id="ao-board-sub"></p></div><span class="ao-tag" id="ao-board-status" aria-live="polite">Connecting</span></div>' +
+            '<ol class="ao-rows" id="ao-rows" aria-live="polite"></ol>' +
             '<div class="ao-handle"><label class="ao-label" for="ao-nick">Player handle</label><div><input id="ao-nick" maxlength="14" placeholder="ANONYMOUS" autocomplete="off"><button id="ao-set" type="button">SET</button></div></div></section>' +
           '<section class="ao-card soft"><div class="ao-stat"><span>Session runs</span><b id="ao-runs">0</b></div><div class="ao-stat"><span id="ao-best-l">Personal best</span><b class="hl" id="ao-best-v">--</b></div></section>' +
         '</aside>' +
@@ -130,7 +145,11 @@
       if (score > 0) {
         const b = getBest(g);
         if (b == null || (cur.low ? score < b : score > b)) store.set(bestKey(g), score);
-        submitScore(g, handle(), score).then(renderBoard, () => {});
+        submitScore(g, handle(), score).then(() => {
+          if (cur && cur.id === g) renderBoard();
+        }).catch(() => {
+          if (cur && cur.id === g) setBoardStatus('Unavailable');
+        });
       }
       renderStats(); renderCabs();
     }
@@ -313,15 +332,32 @@
 
   /* ---------- rendering ---------- */
   const rowsEl = $('#ao-rows', root);
+  const boardStatusEl = $('#ao-board-status', root);
+  let boardRequest = 0;
+  function setBoardStatus(status) {
+    boardStatusEl.textContent = status;
+  }
   async function renderBoard() {
-    if (!cur) return; const g = cur.id; let list = [];
-    try { list = await getScores(g) || []; } catch (e) {}
-    if (!cur || cur.id !== g) return;
+    if (!cur) return;
+    const g = cur.id, request = ++boardRequest;
+    $('#ao-board-sub', root).textContent = cur.name + ' / ' + cur.unit;
+    setBoardStatus('Connecting');
+    let list;
+    try {
+      list = await getScores(g);
+    } catch (e) {
+      if (cur && cur.id === g && request === boardRequest) {
+        setBoardStatus('Unavailable');
+        rowsEl.innerHTML = '<li class="notice">Leaderboard unavailable.</li>';
+      }
+      return;
+    }
+    if (!cur || cur.id !== g || request !== boardRequest) return;
+    setBoardStatus('Online');
     rowsEl.innerHTML = Array.from({ length: 10 }, (_, i) => {
       const e = list[i];
       return '<li class="' + (i === 0 ? 'top' : '') + '"><span>#' + String(i + 1).padStart(2, '0') + '</span><span>' + (e ? esc(e.name) : 'N/A') + '</span><span>' + (e ? e.score : 0) + '</span></li>';
     }).join('');
-    $('#ao-board-sub', root).textContent = cur.name + ' / ' + cur.unit;
   }
   function renderStats() {
     $('#ao-runs', root).textContent = runs;
