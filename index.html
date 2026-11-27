@@ -36,6 +36,7 @@
   <div class="deck-title">
     <span class="deck-grip" id="deck-grip" tabindex="0" role="button" aria-label="Move the music player: drag it, or focus and use the arrow keys">portfolioTape</span>
     <small>luigi lising</small>
+    <button id="deck-min" class="deck-min" type="button" aria-label="Minimize music player" aria-expanded="true" title="Minimize"><i class="fa-solid fa-minus"></i></button>
   </div>
   <div class="deck-top">
     <svg class="deck-path" viewBox="0 0 300 120" aria-hidden="true">
@@ -70,6 +71,15 @@
         <button data-theme="light" type="button" aria-pressed="false" aria-label="Light theme" title="Light"></button>
       </div>
     </div>
+  </div>
+  <!-- Minimized state: just a little cassette. Reels spin while music plays; tap it to open the full deck. -->
+  <div class="mini-tape" id="mini-tape" role="button" tabindex="0" aria-label="Open music player" aria-expanded="false" title="Open player">
+    <span class="mt-label"></span>
+    <span class="mt-window">
+      <span class="mt-reel mt-reel--l"><span class="mt-spin"><i class="mt-pack"></i><i class="mt-hub"></i></span></span>
+      <span class="mt-reel mt-reel--r"><span class="mt-spin"><i class="mt-pack"></i><i class="mt-hub"></i></span></span>
+    </span>
+    <span class="mt-foot"></span>
   </div>
 </aside>
 
