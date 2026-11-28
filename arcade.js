@@ -10,10 +10,13 @@
     set(k, v) { try { localStorage.setItem('pf:' + k, JSON.stringify(v)); } catch (e) {} }
   };
 
-  /* Scores use the same-origin Vercel function backed by Neon Postgres.
-     Memory is "fewest moves", so lower is better. */
+  /* GitHub Pages cannot run this API, so it uses the existing Vercel
+     function. The Vercel deployment is otherwise same-origin. */
+  const apiOrigin = location.hostname.endsWith('.github.io')
+    ? 'https://luigi-lising.vercel.app'
+    : '';
   async function getScores(game) {
-    const response = await fetch('/api/leaderboard?game=' + encodeURIComponent(game), {
+    const response = await fetch(apiOrigin + '/api/leaderboard?game=' + encodeURIComponent(game), {
       headers: { Accept: 'application/json' },
       cache: 'no-store'
     });
@@ -23,7 +26,7 @@
     return result.scores;
   }
   async function submitScore(game, name, score) {
-    const response = await fetch('/api/leaderboard', {
+    const response = await fetch(apiOrigin + '/api/leaderboard', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ game, name, score })
