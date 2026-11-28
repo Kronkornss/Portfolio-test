@@ -3,6 +3,9 @@ const { neon } = require('@neondatabase/serverless');
 const GAMES = new Set(['snake', 'coin', 'memory', 'polyrush']);
 
 function respond(res, status, body) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   return res.status(status).json(body);
 }
 
@@ -11,6 +14,9 @@ function validGame(value) {
 }
 
 module.exports = async function leaderboard(req, res) {
+  if (req.method === 'OPTIONS') {
+    return respond(res, 204, {});
+  }
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.setHeader('Allow', 'GET, POST');
     return respond(res, 405, { error: 'Method not allowed' });
